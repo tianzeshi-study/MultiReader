@@ -40,6 +40,13 @@ const PagesReader: React.FC = () => {
         onPageChange: setCurrentPage,
     });
 
+  // 新增：处理回车事件
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      handleJump();
+    }
+  };
+
   return (
     <div>
       <h1>书山有路你不走</h1>
@@ -49,20 +56,19 @@ const PagesReader: React.FC = () => {
           <h2>学海无涯你闯进来</h2>
           <HtmlViewer htmlContent={htmlContent} />
           <div>
-            <button onClick={() => handlePageChange('prev')} disabled={currentPage === 0}>
-              上一页
-            </button>
-            <button onClick={() => handlePageChange('next')} disabled={currentPage === htmlArray.length - 1}>
-              下一页
-            </button>
-            {/* 使用自定义 Hook 提供的状态和函数 */}
+            <button onClick={() => handlePageChange('prev')} disabled={currentPage === 0}>上一页</button>
+
+
             <input
               type="text"
               value={jumpPage}
               onChange={handleJumpInputChange}
-              placeholder="跳转到..."
+              onKeyPress={handleKeyPress} // 添加 onKeyPress 事件
+              placeholder={`当前 ${currentPage + 1} / ${htmlArray.length}`}
             />
-            <button onClick={handleJump}>跳转</button>
+
+            <button onClick={() => handlePageChange('next')} disabled={currentPage === htmlArray.length - 1}>下一页</button>
+
           </div>
         </>
       )}
