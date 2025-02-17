@@ -7,10 +7,11 @@ import FileToHtml from "./FileToHtml";
 
 GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
 // GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.js';
-// GlobalWorkerOptions.workerSrc = 'node_modules/pdfjs-dist/build/pdf.worker.min.js';
+
 
 const UniReader: React.FC = () => {
   const [htmlContent, setHtmlContent] = useState<string>('');
+
 
   return (
     <div>

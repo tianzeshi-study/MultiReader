@@ -1,10 +1,9 @@
 import React from "react";
-// import BookReader from "./components/BookReader";
-import UniReader from "./components/UniReader";
+import PagesReader from "./components/PagesReader";
 
 const App: React.FC = () => (
   <div>
-    <UniReader />
+    <PagesReader />
   </div>
 );
 

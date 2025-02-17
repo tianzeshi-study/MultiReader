@@ -7,8 +7,8 @@ import HtmlViewer from "./HtmlViewer";
 
 GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
 // GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.js';
-// GlobalWorkerOptions.workerSrc = 'node_modules/pdfjs-dist/build/pdf.worker.min.js';
-// 将EPUB转化为HTML的组件
+
+
 const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onHtmlExtracted }) => {
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -24,19 +24,21 @@ const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onH
                         console.log("docx");
                         const arrayBuffer = reader.result as ArrayBuffer;
                         const { value: html } = await mammoth.convertToHtml({ arrayBuffer });
-                        resultHtml.push(html);
+                        // resultHtml.push(html);
+                        onHtmlExtracted(html);
 
                         break;
                     case "application/epub+zip":
                         console.log("epub");
 
                         const book = Epub(reader.result as ArrayBuffer);
-                        const rendition = book.renderTo('viewer', { flow: 'paginated', width: '100%', height: '100%' });
+
                         await book.ready;
                         for (const spineItem of book.spine.spineItems) {
                             const section = await book.load(spineItem.href);
                             // console.log(section);
                             resultHtml.push(section.body.innerHTML);
+    onHtmlExtracted(section.body.innerHTML);
                         }
                         break;
                     case "application/pdf":
@@ -53,6 +55,7 @@ const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onH
                             // resultHtml.push(textContent.items.map((item: any) => item.str).join("</div> <div>"));
                             const htmlPage = textContent.items.map((item: any) => item.str).join("</div> <div>");
                             resultHtml.push(`<div>${htmlPage}</div><button>${i}</button>`);
+                            onHtmlExtracted(`<div>${htmlPage}</div><button>${i}</button>`);
                         }
 
                         // resultHtml.push(`<div>${combinedHtml}</div>`);
@@ -67,7 +70,8 @@ const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onH
                         for (const paragraph of paragraphs) {
                             resultHtml.push(paragraph);
                         }
-                        // const htmlContent = `<div>${paragraphs}</div>`;
+                                                const htmlContent = `<div>${paragraphs}</div>`;
+                                                onHtmlExtracted(htmlContent);
                         // resultHtml.push(htmlContent);
 
                         break;
@@ -79,7 +83,7 @@ const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onH
                 console.error(error);
             }
 
-            onHtmlExtracted(resultHtml.join(''));
+            // onHtmlExtracted(resultHtml.join(''));
         };
         reader.readAsArrayBuffer(file);
     };
