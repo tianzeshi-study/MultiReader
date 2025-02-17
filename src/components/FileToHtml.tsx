@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Epub from 'epubjs';
-import Spine  from 'epubjs';
+import Spine from 'epubjs';
 import mammoth from "mammoth";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import HtmlViewer from "./HtmlViewer";
@@ -10,83 +10,85 @@ GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
 // GlobalWorkerOptions.workerSrc = 'node_modules/pdfjs-dist/build/pdf.worker.min.js';
 // 将EPUB转化为HTML的组件
 const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onHtmlExtracted }) => {
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-    const resultHtml: string[] = [];    
-        const fileType = file.type;
-try {
-      switch (fileType) {
-        case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        console.log("docx");
-        const arrayBuffer = reader.result as ArrayBuffer;
-    const { value: html } = await mammoth.convertToHtml({ arrayBuffer });
-    resultHtml.push(html);
-          // await handleDocx(file);
-          break;
-        case "application/epub+zip":
-        console.log("epub");
-      // const book = new Epub(reader.result as ArrayBuffer);
-      const book = Epub(reader.result as ArrayBuffer);
-const rendition = book.renderTo('viewer', { flow: 'paginated', width: '100%', height: '100%' });
-await book.ready;
-for (const spineItem of book.spine.spineItems) {
-  // const spine = await book.spine; // 解开 Promise
-  // for (const spineItem of spine.spineItems ) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const resultHtml: string[] = [];
+            const fileType = file.type;
+            try {
+                switch (fileType) {
+                    case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                        console.log("docx");
+                        const arrayBuffer = reader.result as ArrayBuffer;
+                        const { value: html } = await mammoth.convertToHtml({ arrayBuffer });
+                        resultHtml.push(html);
 
-        const section = await book.load(spineItem.href);
-        console.log(section);
-        resultHtml.push(section.body.innerHTML);
-      }
-          break;
-        case "application/pdf":
-        console.log("pdf");
-        const arrayBuffer1 = reader.result as ArrayBuffer;
-        const pdf = await getDocument({ data: arrayBuffer1 }).promise;
-    let combinedHtml = "";
+                        break;
+                    case "application/epub+zip":
+                        console.log("epub");
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      // combinedHtml += textContent.items.map((item: any) => item.str).join("<div></div>");
-      combinedHtml += textContent.items.map((item: any) => item.str).join("</div> <div>");
-    }
+                        const book = Epub(reader.result as ArrayBuffer);
+                        const rendition = book.renderTo('viewer', { flow: 'paginated', width: '100%', height: '100%' });
+                        await book.ready;
+                        for (const spineItem of book.spine.spineItems) {
+                            const section = await book.load(spineItem.href);
+                            // console.log(section);
+                            resultHtml.push(section.body.innerHTML);
+                        }
+                        break;
+                    case "application/pdf":
+                        console.log("pdf");
+                        const arrayBuffer1 = reader.result as ArrayBuffer;
+                        const pdf = await getDocument({ data: arrayBuffer1 }).promise;
+                        let combinedHtml = "";
 
-    // setHtmlContent(`<div>${combinedHtml}</div>`);
-    resultHtml.push(`<div>${combinedHtml}</div>`);
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
 
-// resultHtml.push(combinedHtml);
+                            // combinedHtml += textContent.items.map((item: any) => item.str).join("</div> <div>");
+                            // resultHtml.push(textContent.items.map((item: any) => item.str).join("</div> <div>"));
+                            const htmlPage = textContent.items.map((item: any) => item.str).join("</div> <div>");
+                            resultHtml.push(`<div>${htmlPage}</div><button>${i}</button>`);
+                        }
 
+                        // resultHtml.push(`<div>${combinedHtml}</div>`);
 
-          break;
-        default:
-console.error("error");
+                        break;
+                    case "text/plain":
+                        console.log("txt");
+                        const arrayBuffer2 = reader.result as ArrayBuffer;
+                        const decoder = new TextDecoder('utf-8'); // 或者其他编码，根据文件实际编码决定
+                        const textContent = decoder.decode(arrayBuffer2);
+                        const paragraphs = textContent.split(/\n/).map(paragraph => `<p>${paragraph}</p>`).join('');
+                        for (const paragraph of paragraphs) {
+                            resultHtml.push(paragraph);
+                        }
+                        // const htmlContent = `<div>${paragraphs}</div>`;
+                        // resultHtml.push(htmlContent);
 
-      }
-    } catch (error) {
-      console.error(error);
-    }
-    
-      
-      
-      
+                        break;
+                   default:
+                        console.error("error");
 
-      
-      
+                }
+            } catch (error) {
+                console.error(error);
+            }
 
-      onHtmlExtracted(resultHtml.join(''));
+            onHtmlExtracted(resultHtml.join(''));
+        };
+        reader.readAsArrayBuffer(file);
     };
-    reader.readAsArrayBuffer(file);
-  };
 
-  return (
-    <div>
-      <input type="file" accept=".epub,.docx,.pdf" onChange={handleFileUpload} />
-    </div>
-  );
+    return (
+        <div>
+            <input type="file" accept=".epub,.docx,.pdf,.txt" onChange={handleFileUpload} />
+        </div>
+    );
 };
 
 export default FileToHtml;
