@@ -3,6 +3,7 @@ import Epub from 'epubjs';
 import Spine from 'epubjs';
 import mammoth from "mammoth";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+import { TextItem } from 'pdfjs-dist/types/src/display/api';
 import HtmlViewer from "./HtmlViewer";
 
 GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
@@ -41,26 +42,59 @@ const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onH
     onHtmlExtracted(section.body.innerHTML);
                         }
                         break;
-                    case "application/pdf":
-                        console.log("pdf");
-                        const arrayBuffer1 = reader.result as ArrayBuffer;
-                        const pdf = await getDocument({ data: arrayBuffer1 }).promise;
-                        let combinedHtml = "";
+                        case "application/pdf":
+                            console.log("pdf");
+                            const arrayBuffer1 = reader.result as ArrayBuffer;
+                            const pdf = await getDocument({ data: arrayBuffer1 }).promise;
+                            let combinedHtml = "";
+    
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const textContent = await page.getTextContent();
+    
+                                // 组织 items 为行
+                                const lines: any[] = [];
+                                let currentLine: TextItem[] = [];
+    
+                                for (const item of textContent.items ) {
 
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const textContent = await page.getTextContent();
+                                    if ('transform' in item) {
 
-                            // combinedHtml += textContent.items.map((item: any) => item.str).join("</div> <div>");
-                            // resultHtml.push(textContent.items.map((item: any) => item.str).join("</div> <div>"));
-                            const htmlPage = textContent.items.map((item: any) => item.str).join("</div> <div>");
-                            resultHtml.push(`<div>${htmlPage}</div><button>${i}</button>`);
-                            onHtmlExtracted(`<div>${htmlPage}</div><button>${i}</button>`);
-                        }
-
-                        // resultHtml.push(`<div>${combinedHtml}</div>`);
-
-                        break;
+                                    const y = item.transform[5]; // 获取 y 坐标
+    
+                                    if (currentLine.length === 0) {
+                                        currentLine.push(item);
+                                    } else {
+                                        const lastItem = currentLine[currentLine.length - 1];
+                                        const lastY = lastItem.transform[5];
+    
+                                        // 比较 y 坐标，判断是否在同一行
+                                        if (Math.abs(y - lastY) < 12) { // 阈值可根据实际情况调整
+                                            currentLine.push(item);
+                                        } else {
+                                            lines.push(currentLine);
+                                            currentLine = [item];
+                                        }
+                                    }
+                                }
+                                }
+                                if (currentLine.length > 0) {
+                                    lines.push(currentLine);
+                                }
+    
+                                // 将每行转换为 HTML
+                                const htmlPage = lines.map(line => {
+                                    const lineText = line.map((item: TextItem)  => item.str).join(" ");
+                                    return `<div>${lineText}</div>`;
+                                }).join("");
+    
+                                resultHtml.push(`<div>${htmlPage}</div><button>${i}</button>`);
+                                onHtmlExtracted(`<div>${htmlPage}</div><button>${i}</button>`);
+                            }
+    
+                            // resultHtml.push(`<div>${combinedHtml}</div>`);
+    
+                            break;
                     case "text/plain":
                         console.log("txt");
                         const arrayBuffer2 = reader.result as ArrayBuffer;
