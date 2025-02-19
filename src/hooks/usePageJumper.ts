@@ -18,7 +18,7 @@ const usePageJumper = ({ totalPages, onPageChange }: UsePageJumperProps) => {
       onPageChange(pageNumber - 1);
       setJumpPage('');
     } else {
-      alert('请输入有效的页码！');
+      alert(`请输入有效的页码！${pageNumber} exceed ${totalPages}`);
     }
   }, [jumpPage, totalPages, onPageChange]);
 
