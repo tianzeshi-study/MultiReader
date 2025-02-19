@@ -2,7 +2,6 @@ import Dexie, { Table } from 'dexie'
 
 
 export interface BookStorage {
-  // use file hash as id
   id: string
   name: string
   size: number

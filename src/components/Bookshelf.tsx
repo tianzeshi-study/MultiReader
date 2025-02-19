@@ -117,11 +117,28 @@ const Bookshelf: React.FC = () => {
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <h2>Imported Books</h2>
-      <ul>
-        {books.map((book) => (
-          <li key={book.id}>{book.name}</li>
-        ))}
-      </ul>
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Total Pages</th>
+            <th>Size (MB)</th>
+            <th>Imported At</th>
+            <th>Updated At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {books.map((book) => (
+            <tr key={book.id}>
+              <td>{book.name}</td>
+              <td>{book.totalPage}</td>
+              <td>{(book.size / (1024 * 1024)).toFixed(2)}</td>
+              <td>{new Date(book.importedAt).toLocaleString()}</td>
+              <td>{new Date(book.updatedAt).toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

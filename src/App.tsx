@@ -55,7 +55,7 @@ const App: React.FC = () => (
    
               <IonTabButton tab="reader" href="/reader">
             <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Book Reader</IonLabel>
+            <IonLabel>Workspace</IonLabel>
           </IonTabButton>
           
           

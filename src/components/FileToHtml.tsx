@@ -10,10 +10,15 @@ GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
 // GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.js';
 
 
-const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onHtmlExtracted }) => {
+const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void, onFileUploaded?: (file: File) => void }> = ({ onHtmlExtracted, onFileUploaded }) => {
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
+
+        // 调用 onFileUploaded 回调
+        if (onFileUploaded) {
+            onFileUploaded(file);
+        }
 
         const reader = new FileReader();
         reader.onload = async () => {
@@ -39,35 +44,35 @@ const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onH
                             const section = await book.load(spineItem.href);
                             // console.log(section);
                             resultHtml.push(section.body.innerHTML);
-    onHtmlExtracted(section.body.innerHTML);
+                            onHtmlExtracted(section.body.innerHTML);
                         }
                         break;
-                        case "application/pdf":
-                            console.log("pdf");
-                            const arrayBuffer1 = reader.result as ArrayBuffer;
-                            const pdf = await getDocument({ data: arrayBuffer1 }).promise;
-                            let combinedHtml = "";
-    
-                            for (let i = 1; i <= pdf.numPages; i++) {
-                                const page = await pdf.getPage(i);
-                                const textContent = await page.getTextContent();
-    
-                                // 组织 items 为行
-                                const lines: any[] = [];
-                                let currentLine: TextItem[] = [];
-    
-                                for (const item of textContent.items ) {
+                    case "application/pdf":
+                        console.log("pdf");
+                        const arrayBuffer1 = reader.result as ArrayBuffer;
+                        const pdf = await getDocument({ data: arrayBuffer1 }).promise;
+                        let combinedHtml = "";
 
-                                    if ('transform' in item) {
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+
+                            // 组织 items 为行
+                            const lines: any[] = [];
+                            let currentLine: TextItem[] = [];
+
+                            for (const item of textContent.items) {
+
+                                if ('transform' in item) {
 
                                     const y = item.transform[5]; // 获取 y 坐标
-    
+
                                     if (currentLine.length === 0) {
                                         currentLine.push(item);
                                     } else {
                                         const lastItem = currentLine[currentLine.length - 1];
                                         const lastY = lastItem.transform[5];
-    
+
                                         // 比较 y 坐标，判断是否在同一行
                                         if (Math.abs(y - lastY) < 12) { // 阈值可根据实际情况调整
                                             currentLine.push(item);
@@ -77,24 +82,24 @@ const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onH
                                         }
                                     }
                                 }
-                                }
-                                if (currentLine.length > 0) {
-                                    lines.push(currentLine);
-                                }
-    
-                                // 将每行转换为 HTML
-                                const htmlPage = lines.map(line => {
-                                    const lineText = line.map((item: TextItem)  => item.str).join(" ");
-                                    return `<div>${lineText}</div>`;
-                                }).join("");
-    
-                                resultHtml.push(`<div>${htmlPage}</div><button>${i}</button>`);
-                                onHtmlExtracted(`<div>${htmlPage}</div><button>${i}</button>`);
                             }
-    
-                            // resultHtml.push(`<div>${combinedHtml}</div>`);
-    
-                            break;
+                            if (currentLine.length > 0) {
+                                lines.push(currentLine);
+                            }
+
+                            // 将每行转换为 HTML
+                            const htmlPage = lines.map(line => {
+                                const lineText = line.map((item: TextItem) => item.str).join(" ");
+                                return `<div>${lineText}</div>`;
+                            }).join("");
+
+                            resultHtml.push(`<div>${htmlPage}</div><button>${i}</button>`);
+                            onHtmlExtracted(`<div>${htmlPage}</div><button>${i}</button>`);
+                        }
+
+                        // resultHtml.push(`<div>${combinedHtml}</div>`);
+
+                        break;
                     case "text/plain":
                         console.log("txt");
                         const arrayBuffer2 = reader.result as ArrayBuffer;
@@ -104,12 +109,12 @@ const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void }> = ({ onH
                         for (const paragraph of paragraphs) {
                             resultHtml.push(paragraph);
                         }
-                                                const htmlContent = `<div>${paragraphs}</div>`;
-                                                onHtmlExtracted(htmlContent);
+                        const htmlContent = `<div>${paragraphs}</div>`;
+                        onHtmlExtracted(htmlContent);
                         // resultHtml.push(htmlContent);
 
                         break;
-                   default:
+                    default:
                         console.error("error");
 
                 }

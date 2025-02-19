@@ -114,20 +114,23 @@ const datahash = await getHash(data);
 
     if (!books?.find((b) => b.id === datahash)) {
         addData(datahash, data);
-    } else {
-        console.log("same hash book exist ");
-    }
+        
+            let book = books?.find((b) => b.name === file.name)
 
-
-    let book = books?.find((b) => b.name === file.name)
     if (!book) {
       book = await addBook(file);
     newBooks.push(book);
-    
-    
-    } else {
+            } else {
         console.log("book already in bookshelf");
     }
+    
+    } else {
+        console.log("same hash book exist ");
+        await updateBook(datahash, {name: file.name, updatedAt: Date.now()});
+    }
+
+
+
 
 
   }
@@ -208,4 +211,13 @@ async function getHash(data: string[]): Promise<string> {
   const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
   
   return hashHex;
+}
+
+async function updateBook(id: string, updatedFields: Partial<BookRecord>) {
+  const updated = await db.books.update(id, updatedFields);
+  if (updated) {
+    console.log('Book updated successfully');
+  } else {
+    console.log('Book not found');
+  }
 }
