@@ -16,7 +16,7 @@ const PagesReader: React.FC = () => {
   const [htmlArray, setHtmlArray] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [booksInfo, setBooksInfo] = useState<BookInfo[]>([]);
-  const [currentBookIndex, setCurrentBookIndex] = useState<number>(0);
+  const [currentBookIndex, setCurrentBookIndex] = useState<number>(1);
 
     const handleHtmlExtracted = (html:string) => {
         setHtmlArray(prevArray => [...prevArray, html]);
@@ -31,12 +31,14 @@ const handleFileChange = (file:File) => {
             // 如果书籍已存在，则更新页数 (这里假设每次上传都会重置该书的页数)
             const updatedBooks = [...prevBooks];
             // Store the current htmlArray into bookData before resetting.
+            console.log("update  book data", file.name);  
             updatedBooks[existingBookIndex] = { ...updatedBooks[existingBookIndex], bookName: file.name, bookPages: 0, bookData: htmlArray }; // 初始为0，后续根据 htmlArray 更新
             return updatedBooks;
           } else {
             // 如果书籍不存在，则添加新书籍
             // Initialize bookData with an empty array.
-            return [...prevBooks, { bookName: file.name, bookPages: 0, bookData: [] }];
+            console.log("add new book", file.name);  
+            return [...prevBooks, { bookName: file.name, bookPages: 0, bookData: htmlArray }];
           }
         });
 
@@ -45,11 +47,12 @@ const handleFileChange = (file:File) => {
         setCurrentPage(0);
     }
 
-  useEffect(() => {
+  const bookChangeEffect =  useEffect(() => {
     if (htmlArray.length > 0) {
       setHtmlContent(htmlArray[currentPage]);
 
       // 更新当前书籍的总页数
+      if (booksInfo.length > 0)  {
       setBooksInfo(prevBooks => {
         return prevBooks.map((book, index) => {
           // if (index === currentBookIndex) { // 修改：根据索引比较
@@ -67,49 +70,18 @@ const handleFileChange = (file:File) => {
         });
       });
     }
+    }
   }, [htmlArray, currentPage, currentBookIndex]);
 
 
-/*
-const updateBookList = useEffect(() => {
+
+
+
+  const pageChangeEffect = useEffect(() => {
     if (htmlArray.length > 0) {
       setHtmlContent(htmlArray[currentPage]);
-      // 更新当前书籍的总页数
-      setBooksInfo(prevBooks => {
-        return prevBooks.map((book, index) => {
-            console.log("index", book, index);
-          if (index === currentBookIndex ) {
-          if  (index === 0) {
-            return { ...book, bookPages: htmlArray.length };
-          } else  {
-            const prevPage = booksInfo[index -1].bookPages;
-            console.log("updateBookList", book, prevPage, htmlArray.length);
-
-            return { ...book, bookPages: (htmlArray.length - prevPage) };
-          }
-          } else  {
-            // const prevPage = booksInfo[index -1].bookPages;
-            const prevPage = booksInfo.slice(0, index).reduce((acc, curr) => acc + curr, 0);
-            const prevName = booksInfo[index -1].bookName;
-            console.log("updateBookList1", book, prevName,  prevPage, htmlArray.length);
-
-            return { ...book, bookPages: (htmlArray.length - prevPage) };
-          }
-
-          return book;
-        });
-      });
     }
-  }, [booksInfo.length]);
-  */
-
-
-  useEffect(() => {
-    if (htmlArray.length > 0) {
-      // setCurrentPage(0); // 确保有内容时显示第一页
-      setCurrentPage(currentPage);
-    }
-  }, [htmlArray]);
+  }, [htmlArray, currentPage]);
 
   const handlePageChange = (direction: 'prev' | 'next') => {
     if (direction === 'prev' && currentPage > 0) {
@@ -124,7 +96,7 @@ const updateBookList = useEffect(() => {
         onPageChange: setCurrentPage,
     });
 
-  // 处理回车事件
+
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       handleJump();
@@ -133,14 +105,38 @@ const updateBookList = useEffect(() => {
 
   // 修改：处理书籍切换，接收索引
   const handleBookChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedBookIndex = parseInt(event.target.value, 10); // 解析索引
+           
+        
+    const selectedBookIndex = parseInt(event.target.value, 10);
+console.log("selectedBookIndex", selectedBookIndex);
+console.log("selected book pages ", booksInfo[selectedBookIndex].bookData.length);
     setCurrentBookIndex(selectedBookIndex);
+    // setHtmlArray(booksInfo[currentBookIndex].bookData); 
+
       // 切换书籍时，重置当前页码为 0
-      // setCurrentPage(0);
+      setCurrentPage(0);
       // TODO: 根据书籍名称加载对应的 htmlArray
 
   };
 
+const selectBookEffect = useEffect(() => {
+    // if (booksInfo.length > 0 && currentBookIndex < booksInfo.length) {
+        console.log("booksInfo", booksInfo, booksInfo.length);
+        console.log("currentBookIndex", currentBookIndex);
+        if (booksInfo.length > 1 ) {
+        console.log("change to selected data");
+
+
+      const selectedBookData = booksInfo[currentBookIndex +1].bookData;
+      // setHtmlArray(selectedBookData);
+      setHtmlArray([]);
+      for (const data of selectedBookData) {
+setHtmlArray(prevArray => [...prevArray, data]);
+}
+
+    }
+  }, [currentBookIndex]);
+  
   return (
     <div>
       <h1>书山有路你不走</h1>
