@@ -47,10 +47,12 @@ const handleFileChange = (file:File) => {
         // Clear htmlArray and reset currentPage
         setHtmlArray([]);
         setCurrentPage(0);
+        setCurrentBookIndex(booksInfo.length);
     }
 
   const bookChangeEffect =  useEffect(() => {
     if (htmlArray.length > 0) {
+        console.log("book changed");
       setHtmlContent(htmlArray[currentPage]);
 
       // 更新当前书籍的总页数
@@ -58,25 +60,18 @@ const handleFileChange = (file:File) => {
       setBooksInfo(prevBooks => {
         return prevBooks.map((book, index) => {
           // if (index === currentBookIndex) { // 修改：根据索引比较
-            // return { ...book, bookPages: htmlArray.length };
-          // }
-          // return book;
-          if (index !== booksInfo.length -1) { 
-          // return { ...book, bookPages: (htmlArray.length - booksInfo[index -1].bookPages) };
-          return { ...book};
-          } else {
-          // return book;
+          if (index === booksInfo.length -1&& currentBookIndex === booksInfo.length -1) { 
           return { ...book, bookPages: htmlArray.length, bookData: htmlArray };
+          } else {
+          console.log("update book info", index);
+          return { ...book};
           }
           return book;
         });
       });
     }
     }
-  }, [htmlArray, currentPage, currentBookIndex]);
-
-
-
+  }, [currentBookIndex, htmlArray, currentPage]);
 
 
   const pageChangeEffect = useEffect(() => {
@@ -122,10 +117,10 @@ console.log("selected book pages ", booksInfo[selectedBookIndex].bookData.length
   };
 
 const selectBookEffect = useEffect(() => {
-    // if (booksInfo.length > 0 && currentBookIndex < booksInfo.length) {
+    if (booksInfo.length > 0 && currentBookIndex < booksInfo.length) {
         console.log("booksInfo", booksInfo, booksInfo.length);
         console.log("currentBookIndex", currentBookIndex);
-        if (booksInfo.length > 1 ) {
+        // if (booksInfo.length > 1 ) {
         console.log("change to selected data");
 
 
