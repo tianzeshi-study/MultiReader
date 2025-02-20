@@ -16,7 +16,7 @@ const PagesReader: React.FC = () => {
   const [htmlArray, setHtmlArray] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [booksInfo, setBooksInfo] = useState<BookInfo[]>([]);
-  const [currentBookIndex, setCurrentBookIndex] = useState<number>(1);
+  const [currentBookIndex, setCurrentBookIndex] = useState<number>(0);
 
     const handleHtmlExtracted = (html:string) => {
         setHtmlArray(prevArray => [...prevArray, html]);
@@ -38,9 +38,11 @@ const handleFileChange = (file:File) => {
             // 如果书籍不存在，则添加新书籍
             // Initialize bookData with an empty array.
             console.log("add new book", file.name);  
-            return [...prevBooks, { bookName: file.name, bookPages: 0, bookData: htmlArray }];
+            // return [...prevBooks, { bookName: file.name, bookPages: 0, bookData: htmlArray }];
+            return [...prevBooks, { bookName: file.name, bookPages: 0, bookData: [] }];
           }
         });
+        console.log("file change booksInfo count ", booksInfo.length, booksInfo);   
 
         // Clear htmlArray and reset currentPage
         setHtmlArray([]);
@@ -64,7 +66,7 @@ const handleFileChange = (file:File) => {
           return { ...book};
           } else {
           // return book;
-          return { ...book, bookPages: htmlArray.length };
+          return { ...book, bookPages: htmlArray.length, bookData: htmlArray };
           }
           return book;
         });
@@ -127,7 +129,7 @@ const selectBookEffect = useEffect(() => {
         console.log("change to selected data");
 
 
-      const selectedBookData = booksInfo[currentBookIndex +1].bookData;
+      const selectedBookData = booksInfo[currentBookIndex].bookData;
       // setHtmlArray(selectedBookData);
       setHtmlArray([]);
       for (const data of selectedBookData) {
