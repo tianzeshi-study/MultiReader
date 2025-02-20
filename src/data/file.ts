@@ -213,7 +213,7 @@ async function getHash(data: string[]): Promise<string> {
   return hashHex;
 }
 
-async function updateBook(id: string, updatedFields: Partial<BookRecord>) {
+async function updateBook(id: string, updatedFields: Partial<BookStorage>) {
   const updated = await db.books.update(id, updatedFields);
   if (updated) {
     console.log('Book updated successfully');

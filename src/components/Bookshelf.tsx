@@ -134,7 +134,7 @@ const Bookshelf: React.FC = () => {
               <td>{book.totalPage}</td>
               <td>{(book.size / (1024 * 1024)).toFixed(2)}</td>
               <td>{new Date(book.importedAt).toLocaleString()}</td>
-              <td>{new Date(book.updatedAt).toLocaleString()}</td>
+              <td>{book.updatedAt ? new Date(book.updatedAt).toLocaleString() : 'N/A'}</td>
             </tr>
           ))}
         </tbody>

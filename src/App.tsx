@@ -1,5 +1,6 @@
 import React from "react";
-import PagesReader from "./components/PagesReader";
+// import PagesReader from "./components/PagesReader";
+import WorkspaceTab from "./pages/WorkspaceTab";
 import Bookshelf from "./components/Bookshelf";
 
 import { Redirect, Route } from 'react-router-dom';
@@ -44,7 +45,7 @@ const App: React.FC = () => (
 
 
           <Route path="/reader">
-            <PagesReader/>
+            <WorkspaceTab/>
           </Route>
 
           <Route exact path="/">
