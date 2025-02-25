@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';  // 使用 useHistory
 import { handleFiles, fetchBook } from '../data/file';
 import { db, BookStorage } from '../data/database';
 
-// function Bookshelf() {
 const Bookshelf: React.FC = () => {
   const [books, setBooks] = useState<BookStorage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const history = useHistory();  // 使用 history hook
 
   useEffect(() => {
     loadBooks();
@@ -38,38 +39,37 @@ const Bookshelf: React.FC = () => {
       setLoading(false);
     }
   };
-    const onInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        
-        setError(null);
 
-        const files = event.target.files;
-        if (files) {
-            try {
-                const newBooks = await handleFiles(files);
-                setBooks((prevBooks) => [...prevBooks, ...newBooks]);
-            } catch (error) {
-                setError('Failed to import books.');
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        }
-    };
+  const onInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+
+    const files = event.target.files;
+    if (files) {
+      try {
+        const newBooks = await handleFiles(files);
+        setBooks((prevBooks) => [...prevBooks, ...newBooks]);
+      } catch (error) {
+        setError('Failed to import books.');
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   const handleFetchBook = async (url: string) => {
     setLoading(true);
     setError(null);
     try {
       const newBook = await fetchBook(url);
-        if (newBook) {
-            setBooks((prevBooks) => {
-                if (prevBooks.find(b => b.id === newBook.id)) {
-                    return prevBooks
-                }
-                return [...prevBooks, newBook]
-            });
-        }
-
+      if (newBook) {
+        setBooks((prevBooks) => {
+          if (prevBooks.find(b => b.id === newBook.id)) {
+            return prevBooks;
+          }
+          return [...prevBooks, newBook];
+        });
+      }
     } catch (error) {
       setError('Failed to fetch book.');
       console.error(error);
@@ -80,6 +80,10 @@ const Bookshelf: React.FC = () => {
 
   const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+  };
+
+  const handleBookClick = (id: number) => {
+    history.push(`/books/${id}`);  // 使用 history.push 进行路由跳转
   };
 
   return (
@@ -94,10 +98,8 @@ const Bookshelf: React.FC = () => {
         }}
       >
         Drag and drop books here, or click to select files.
-                <input type="file" multiple onChange={onInputChange} style={{ marginTop: "10px" }} />
-
+        <input type="file" multiple onChange={onInputChange} style={{ marginTop: '10px' }} />
       </div>
-
       <div>
         <input
           type="text"
@@ -130,7 +132,14 @@ const Bookshelf: React.FC = () => {
         <tbody>
           {books.map((book) => (
             <tr key={book.id}>
-              <td>{book.name}</td>
+              <td>
+                <span
+                  style={{ color: 'blue', cursor: 'pointer' }}
+                  onClick={() => handleBookClick(book.id)}  // 添加点击事件处理
+                >
+                  {book.name}
+                </span>
+              </td>
               <td>{book.totalPage}</td>
               <td>{(book.size / (1024 * 1024)).toFixed(2)}</td>
               <td>{new Date(book.importedAt).toLocaleString()}</td>

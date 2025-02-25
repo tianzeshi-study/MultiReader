@@ -1,6 +1,10 @@
+import './i18n'; // 确保 i18n 初始化
+import { useTranslation } from 'react-i18next';
+
 import React from "react";
 // import PagesReader from "./components/PagesReader";
 import WorkspaceTab from "./pages/WorkspaceTab";
+import BookViewer from "./pages/BookViewer";
 import Bookshelf from "./components/Bookshelf";
 
 import { Redirect, Route } from 'react-router-dom';
@@ -32,19 +36,33 @@ import '@ionic/react/css/display.css';
 
 setupIonicReact();
 
-const App: React.FC = () => (
+const App: React.FC = () => {
+
+     const { t, i18n } = useTranslation();
+
+  const changeLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('language', lang); // 记住用户选择
+  };
+
+  
+    return (
   <IonApp>
     <IonReactRouter>
       <IonTabs>
         <IonRouterOutlet>
 
-          <Route path="/bookshelf">
+<Route path="/books/:id">
+            <BookViewer />
+          </Route>
+          
+          <Route exact path="/bookshelf">
             <Bookshelf/>
           </Route>
 
 
 
-          <Route path="/reader">
+          <Route exact path="/reader">
             <WorkspaceTab/>
           </Route>
 
@@ -56,13 +74,13 @@ const App: React.FC = () => (
    
               <IonTabButton tab="reader" href="/reader">
             <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Workspace</IonLabel>
+            <IonLabel> {t('WORKSPACE')} </IonLabel>
           </IonTabButton>
           
           
                         <IonTabButton tab="bookshelf" href="/bookshelf">
             <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Bookshelf</IonLabel>
+            <IonLabel> {t('BOOKSHELF')}</IonLabel>
           </IonTabButton>
           
         </IonTabBar>
@@ -70,5 +88,6 @@ const App: React.FC = () => (
     </IonReactRouter>
   </IonApp>
 );
+};
 
 export default App;
