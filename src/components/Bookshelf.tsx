@@ -82,7 +82,7 @@ const Bookshelf: React.FC = () => {
     event.preventDefault();
   };
 
-  const handleBookClick = (id: number) => {
+  const handleBookClick = (id: string) => {
     history.push(`/books/${id}`);  // 使用 history.push 进行路由跳转
   };
 

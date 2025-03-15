@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useCallback} from 'react';
 import HtmlViewer from "./HtmlViewer";
 import usePageJumper from '../hooks/usePageJumper'; // 导入自定义 Hook
 
@@ -14,20 +14,32 @@ interface BookInfo {
 interface WorkspaceReaderProps {
     FileToHtmlComponent: React.FC<{
         onHtmlExtracted: (html: string) => void;
-        onFileUploaded: (file: File) => void;
+        onFileUploaded?: (file: File) => void;
+        bookData?: string[];
     }>;
+bookData?: string[];
 }
 
-const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent }) => {
+const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent, bookData}) => {
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [htmlArray, setHtmlArray] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [booksInfo, setBooksInfo] = useState<BookInfo[]>([]);
   const [currentBookIndex, setCurrentBookIndex] = useState<number>(0);
 
-    const handleHtmlExtracted = (html:string) => {
+  useEffect(() => {
+    return () => {
+      console.log('WorkspaceReader unmounted, resetting state');
+      setHtmlContent('');
+      setHtmlArray([]);
+      setBooksInfo([]);
+    };
+  }, []);
+
+
+    const handleHtmlExtracted = useCallback((html:string) => {
         setHtmlArray(prevArray => [...prevArray, html]);
-    }
+    }, []);
 
 const handleFileChange = (file:File) => {
         console.log("file changed", file.name);
@@ -149,6 +161,7 @@ setHtmlArray(prevArray => [...prevArray, data]);
       <FileToHtmlComponent
         onHtmlExtracted={handleHtmlExtracted}
         onFileUploaded={handleFileChange}
+        bookData={bookData}
       />
 
       {/* 修改：书籍选择下拉框 */}
