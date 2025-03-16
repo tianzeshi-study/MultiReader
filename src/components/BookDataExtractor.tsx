@@ -5,7 +5,7 @@ const BookDataExtractor: React.FC<{
   bookData?: string[];
 // }> = React.memo(({ onHtmlExtracted, bookData }) => {
     }> = ({ onHtmlExtracted, bookData }) => {
-    console.log("extracting"); 
+
   useEffect(() => {
 
     if (bookData) {
@@ -13,7 +13,7 @@ const BookDataExtractor: React.FC<{
           let  index =0;
         for (const data of bookData) {
           console.log("data", bookData.length);
-          console.log(`第 ${index + 1} 次循环，数据：`);
+
   index++; // 每次循环后递增索引
 
           onHtmlExtracted(data);
