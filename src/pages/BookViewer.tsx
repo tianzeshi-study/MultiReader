@@ -115,7 +115,7 @@ const handleShowFullText = () => {
                 <BookshelfReader
                   FileToHtmlComponent={BookDataExtractor}
                   bookData={bookData} // 传递缓存的 bookData
-                  progressPage= {book.progressPage}
+                  progressPage= {book?.progressPage}
                 />
               ) :(<HtmlViewer htmlContent={fileData.data.toString()} />)}
               </div>

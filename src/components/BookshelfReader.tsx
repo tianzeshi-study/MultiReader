@@ -21,7 +21,7 @@ interface BookshelfReaderProps {
         bookData?: string[];
     }>;
 bookData?: string[];
-currentPage?: number;
+progressPage?: number;
 }
 
 const BookshelfReader: React.FC<BookshelfReaderProps> = ({ FileToHtmlComponent, bookData, progressPage}) => {
@@ -44,7 +44,9 @@ const BookshelfReader: React.FC<BookshelfReaderProps> = ({ FileToHtmlComponent, 
 
 const mountEffect =  useEffect(() => {
       if (storedBook) {
+          if (bookData) {
           setHtmlArray(bookData);
+          }
           if (progressPage) {
           setCurrentPage(progressPage);
           }  
@@ -56,9 +58,9 @@ const loadData = async () => {
           const data = await db?.filesData.get(params.id);
       const b = await db?.books.get(params.id);
       booksInfo[currentBookIndex] = {} as BookInfo;
-          booksInfo[currentBookIndex].bookPages = b.totalPage;
-          booksInfo[currentBookIndex].bookName = b.name;
-          booksInfo[currentBookIndex].bookData = bookData;
+          booksInfo[currentBookIndex].bookPages = b?.totalPage!;
+          booksInfo[currentBookIndex].bookName = b?.name!;
+          booksInfo[currentBookIndex].bookData = bookData || [];
           setBooksInfo(booksInfo);
           // if (b.progressPage) {
           // setCurrentPage(b.progressPage);

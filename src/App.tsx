@@ -2,7 +2,7 @@ import './i18n'; // 确保 i18n 初始化
 import { useTranslation } from 'react-i18next';
 
 import React from "react";
-// import PagesReader from "./components/PagesReader";
+import AuthPage  from "./components/AuthPage";
 import WorkspaceTab from "./pages/WorkspaceTab";
 import BookViewer from "./pages/BookViewer";
 import Bookshelf from "./components/Bookshelf";
