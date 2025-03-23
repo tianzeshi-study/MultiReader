@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-
+import React, { useState, useEffect } from 'react';
+import SyncButton from './SyncButton';
 // 注册组件
 const RegisterForm: React.FC = () => {
   const [username, setUsername] = useState<string>('');
@@ -76,8 +76,13 @@ const RegisterForm: React.FC = () => {
   );
 };
 
+// 定义 LoginForm 组件属性，添加 onLogin 回调通知顶层组件登录成功
+interface LoginFormProps {
+  onLogin: () => void;
+}
+
 // 登录组件
-const LoginForm: React.FC = () => {
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -97,14 +102,27 @@ const LoginForm: React.FC = () => {
         body: JSON.stringify({ username, password })
       });
 
-      if (response.status === 418) {
+      if (response.status === 401) {
         setError('登录失败：可能密码错误或用户不存在。');
       } else if (response.ok) {
-        setLoggedIn(true);
+        // 解析 JSON 响应，假设后端返回的是 JWT 字符串
+        const data = await response.json();
+
+        if (data && typeof data === 'string') {
+          console.log("jwt:", data);
+          // 存储 JWT 到 localStorage
+          localStorage.setItem('jwt', data);
+          setLoggedIn(true);
+          // 通知顶层组件登录成功
+          onLogin();
+        } else {
+          setError('登录成功，但返回的 token 无效');
+        }
       } else {
         setError('发生未知错误');
       }
     } catch (err) {
+      console.log(err);
       setError('网络错误');
     }
   };
@@ -141,21 +159,66 @@ const LoginForm: React.FC = () => {
   );
 };
 
-// 主页面，通过按钮切换登录/注册
+// 登录后展示的 Dashboard 页面
+const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+  return (
+    <div>
+      <h2>欢迎来到 Dashboard</h2>
+      <p>您已成功登录！</p>
+      <SyncButton/>
+      <button onClick={onLogout}>退出登录</button>
+    </div>
+  );
+};
+
+// 主页面，根据登录状态显示不同的页面
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState<boolean>(true);
+  // 全局登录状态，根据 localStorage 判断（也可以在登录时更新该状态）
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  // 组件加载时检查 localStorage 中是否存在 JWT
+  useEffect(() => {
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      setIsAuthenticated(true);
+          }
+  }, []);
+  
+  const authenticatedEffect =  useEffect(() => {
+      console.log("isAuthenticated");
+}, [isAuthenticated]);
+
+  // 登录成功回调
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
+
+
+
+  // 退出登录时清除 localStorage 中的 token
+  const handleLogout = () => {
+    localStorage.removeItem('jwt');
+    setIsAuthenticated(false);
+  };
 
   return (
     <div style={{ maxWidth: 400, margin: '0 auto', padding: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-        <button onClick={() => setIsLogin(true)} disabled={isLogin}>
-          登录
-        </button>
-        <button onClick={() => setIsLogin(false)} disabled={!isLogin}>
-          注册
-        </button>
-      </div>
-      {isLogin ? <LoginForm /> : <RegisterForm />}
+      {isAuthenticated ? (
+        <Dashboard onLogout={handleLogout} />
+      ) : (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <button onClick={() => setIsLogin(true)} disabled={isLogin}>
+              登录
+            </button>
+            <button onClick={() => setIsLogin(false)} disabled={!isLogin}>
+              注册
+            </button>
+          </div>
+          {isLogin ? <LoginForm onLogin={handleLoginSuccess} /> : <RegisterForm />}
+        </>
+      )}
     </div>
   );
 };

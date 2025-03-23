@@ -69,6 +69,11 @@ const App: React.FC = () => {
           <Route exact path="/">
             <Redirect to="/reader" />
           </Route>
+          
+          <Route exact path="/auth">
+            <AuthPage/>
+          </Route>
+          
         </IonRouterOutlet>
         <IonTabBar slot="bottom">
    
@@ -81,6 +86,11 @@ const App: React.FC = () => {
                         <IonTabButton tab="bookshelf" href="/bookshelf">
             <IonIcon aria-hidden="true" icon={square} />
             <IonLabel> {t('BOOKSHELF')}</IonLabel>
+          </IonTabButton>
+          
+          <IonTabButton tab="auth" href="/auth">
+            <IonIcon aria-hidden="true" icon={square} />
+            <IonLabel> {t('AUTH')} </IonLabel>
           </IonTabButton>
           
         </IonTabBar>

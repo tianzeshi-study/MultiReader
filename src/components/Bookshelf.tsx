@@ -16,6 +16,7 @@ const Bookshelf: React.FC = () => {
   const loadBooks = async () => {
     try {
       const booksFromDb = await db.books.toArray();
+      console.log("booksFromDb", booksFromDb);
       setBooks(booksFromDb);
     } catch (error) {
       setError('Failed to load books.');
@@ -64,7 +65,7 @@ const Bookshelf: React.FC = () => {
       const newBook = await fetchBook(url);
       if (newBook) {
         setBooks((prevBooks) => {
-          if (prevBooks.find(b => b.id === newBook.id)) {
+          if (prevBooks.find(b => b.book_id === newBook.book_id)) {
             return prevBooks;
           }
           return [...prevBooks, newBook];
@@ -132,11 +133,11 @@ const Bookshelf: React.FC = () => {
         </thead>
         <tbody>
           {books.map((book) => (
-            <tr key={book.id}>
+            <tr key={book.book_id}>
               <td>
                 <span
                   style={{ color: 'blue', cursor: 'pointer' }}
-                  onClick={() => handleBookClick(book.id)}  // 添加点击事件处理
+                  onClick={() => handleBookClick(book.book_id)}  // 添加点击事件处理
                 >
                   {book.name}
                 </span>

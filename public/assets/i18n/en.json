@@ -1,5 +1,6 @@
 {
-  "WORKSPACE": "Welcome to Ionic React",
+  "WORKSPACE": "Workspace",
   "BOOKSHELF": "Bookshelf",
+  "AUTH":"Dashboard",
   "BUTTON_CANCEL": "Cancel"
 }

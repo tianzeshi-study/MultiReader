@@ -2,7 +2,7 @@ import Dexie, { Table } from 'dexie'
 
 
 export interface BookStorage {
-  id: string
+  book_id: string
   name: string
   size: number
   importedAt: number
@@ -18,7 +18,7 @@ export interface BookStorage {
 } */
 
 export interface DataStorage {
-  id: string
+  book_id: string
   data: string[]
 }
 
@@ -32,9 +32,9 @@ export class DataBase extends Dexie {
 
 
     this.version(1).stores({
-      books: 'id, name, createdAt, progressPage, totalPage',
-// files: 'id, file',
-filesData: 'id, data', 
+      books: 'book_id, name, createdAt, progressPage, totalPage',
+
+filesData: 'book_id, data', 
     })
   }
 }

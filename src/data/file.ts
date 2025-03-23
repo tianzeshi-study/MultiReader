@@ -112,13 +112,16 @@ export async function handleFiles(files: Iterable<File>) {
 const data = await fileToArray(file);
 const datahash = await getHash(data);
 
-    if (!books?.find((b) => b.id === datahash)) {
-        addData(datahash, data);
+    if (!books?.find((b) => b.book_id === datahash)) {
+
+        let result = await addData(datahash, data);
+        console.log("addData", result);
         
             let book = books?.find((b) => b.name === file.name)
 
     if (!book) {
       book = await addBook(file);
+      console.log("add book to db\b", book);
     newBooks.push(book);
             } else {
         console.log("book already in bookshelf");
@@ -142,16 +145,16 @@ export async function addBook(file: File) {
   const data = await fileToArray(file);
 const datahash = await getHash(data);
   const book: BookStorage = {
-    id: datahash,
+    book_id: datahash,
     name: file.name,
     size: file.size,
     importedAt: Date.now(),
     totalPage: data.length,
   }
   db?.books.add(book)
-  // addFile(book.id, file);
+  // addFile(book.book_id, file);
   
-  // addData(book.id, data);
+
   return book
 }
 
@@ -162,9 +165,17 @@ export async function addFile(id: string, file: File) {
 } 
 */
 
-export async function addData(id: string, data: string[]) {
-  db?.filesData.add({ id, data })
+export async function addData(book_id: string, data: string[]) {
+  try {
+    const key = await db?.filesData.add({  book_id, data });
+    console.log(`addData, 数据添加成功，主键: ${key}`);
+    return key; // 返回成功的主键
+  } catch (error) {
+    console.error("addData, 数据添加失败:", error);
+    return null; // 失败时返回 null
+  }
 }
+
 
 export function readBlob(fn: (reader: FileReader) => void) {
   return new Promise<string>((resolve) => {
