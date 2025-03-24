@@ -9,17 +9,17 @@ interface CreateBook {
   updated_at?: number
   progress_page?: number
   total_page: number,
-  book_data: string
+  book_data: string[]
 }
 
 interface  ReceiveBook    {
     id: number,
     belong_to: number,
-    book_id: sstring,      
+    book_id: string,      
     name: string,
     size: number,
-    imported_at: string,
-    updated_at: string,              
+    imported_at: number,
+    updated_at: number,              
     progress_page: number,           
     total_page: number,
 }
@@ -31,6 +31,9 @@ const SyncButton: React.FC = () => {
 
 const handleSync = async () => {
     const token = localStorage.getItem('jwt');
+    if (!token) {
+        return 
+            };
   // --- 封装 Worker 返回结果为 Promise ---
   const workerPromise: Promise<ReceiveBook[]> = new Promise((resolve, reject) => {
     // 注意：如果你使用打包工具（如 Vite、Webpack），请使用相应方式引入 worker 文件
@@ -54,7 +57,7 @@ const handleSync = async () => {
     };
   });
 
-const remotePromise: Promise<ReceiveBook[]> = fetchBooks(token);
+const remotePromise: Promise<ReceiveBook[]> = fetchBooks(token ) ||  [];
 
   // --- 本地数据库查询 ---
   const localPromise = db.books.toArray().catch(err => {
@@ -66,7 +69,7 @@ const remotePromise: Promise<ReceiveBook[]> = fetchBooks(token);
   const [remoteBooksRaw, localBooksRaw] = await Promise.all([remotePromise, localPromise]);
   // 如果任一端为空，使用空数组确保全量同步
   const remoteBooks: ReceiveBook[] = remoteBooksRaw || [];
-  const localBooks: CreateBook[] = localBooksRaw || [];
+  const localBooks: BookStorage[] = localBooksRaw || [];
 
 
   // --- 构建 Map 便于查找（根据 id） ---
@@ -78,6 +81,9 @@ const remotePromise: Promise<ReceiveBook[]> = fetchBooks(token);
   console.log("localNewBooks", localNewBooks);
   for (const book of localNewBooks) {
       const bookdata = await db.filesData.get(book.book_id);
+      if (!bookdata) {
+          return
+      };
       const createBook: CreateBook =  {
           book_id: book.book_id,
 name:book.name,
@@ -104,7 +110,7 @@ book_data: bookdata.data
         console.error(`Failed to post local new book ${book.book_id}:`, await response.text());
       }
     } catch (err) {
-      console.error(`Error posting local new book ${book.id}:`, err);
+      console.error(`Error posting local new book ${book.book_id}:`, err);
     }
   }
 
@@ -133,8 +139,8 @@ book_data: bookdata.data
   // --- 3. 两端都存在的书籍：检查数据是否更新 ---
   // 遍历两边共有的书籍id
   const commonBookIds = remoteBooks
-    .filter(book => localMap.has(book.id))
-    .map(book => book.id);
+    .filter(book => localMap.has(book.book_id))
+    .map(book => book.book_id);
 
   for (const id of commonBookIds) {
     const remoteBook = remoteMap.get(id);
@@ -147,13 +153,22 @@ book_data: bookdata.data
     }
     
     // 使用 updatedAt，如果没有则使用 importedAt 作为比较依据
-    const remoteTime = remoteBook.updatedAt || remoteBook.importedAt;
+    const remoteTime = remoteBook.updated_at || remoteBook.imported_at;
     const localTime = localBook.updatedAt || localBook.importedAt;
     
     if (remoteTime > localTime) {
       // 远程数据较新，更新本地数据
       try {
-        await db.books.put(remoteBook);
+          const bookStorage: BookStorage = {
+              book_id: remoteBook.book_id,
+          name: remoteBook.name,
+  size: remoteBook.size,
+  importedAt: remoteBook.imported_at,
+  updatedAt: remoteBook.updated_at,
+  progressPage: remoteBook.progress_page,
+  totalPage: remoteBook.total_page
+          };
+        await db.books.put(bookStorage);
         console.log(`Updated local book ${id} with remote changes.`);
       } catch (err) {
         console.error(`Error updating local book ${id}:`, err);
