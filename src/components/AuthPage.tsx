@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SyncButton from './SyncButton';
+
 // 注册组件
 const RegisterForm: React.FC = () => {
   const [username, setUsername] = useState<string>('');

@@ -1,5 +1,6 @@
 import React from 'react';
-import { BookStorage, db } from '../data/database';
+import {DataStorage,  BookStorage, db } from '../data/database';
+import {addData}  from '../data/file';
 
 interface CreateBook {
   book_id: string
@@ -10,6 +11,12 @@ interface CreateBook {
   progress_page?: number
   total_page: number,
   book_data: string[]
+}
+
+interface UpdateBook {
+  book_id: string
+  updated_at?: number
+  progress_page?: number
 }
 
 interface  ReceiveBook    {
@@ -24,8 +31,8 @@ interface  ReceiveBook    {
     total_page: number,
 }
 
-const SyncButton: React.FC = () => {
     const api_url = 'http://localhost:3000/books';
+const SyncButton: React.FC = () => {
   
 
 
@@ -34,29 +41,6 @@ const handleSync = async () => {
     if (!token) {
         return 
             };
-  // --- 封装 Worker 返回结果为 Promise ---
-  const workerPromise: Promise<ReceiveBook[]> = new Promise((resolve, reject) => {
-    // 注意：如果你使用打包工具（如 Vite、Webpack），请使用相应方式引入 worker 文件
-    const worker = new Worker('worker.js');
-    // 如有需要，可以传递其他参数，此处仅作 token 示例
-    worker.postMessage({ token });
-  
-    worker.onmessage = (event) => {
-      const { success, books, error } = event.data;
-      if (success) {
-        // 如果 books 为空，则返回空数组
-        resolve(books || []);
-      } else {
-        reject(error);
-      }
-    };
-  
-    worker.onerror = (err) => {
-      console.error('Worker encountered an error:', err);
-      reject(err);
-    };
-  });
-
 const remotePromise: Promise<ReceiveBook[]> = fetchBooks(token ) ||  [];
 
   // --- 本地数据库查询 ---
@@ -129,6 +113,8 @@ book_data: bookdata.data
       };
       console.log("bookStorage", bookStorage);
     try {
+        const bookdata = await fetchBookdata(token, book.book_id);
+        await addData(book.book_id, bookdata.data);
       await db.books.add(bookStorage);
       console.log(`Added remote new book ${book.id} to local DB.`);
     } catch (err) {
@@ -174,15 +160,20 @@ book_data: bookdata.data
         console.error(`Error updating local book ${id}:`, err);
       }
     } else if (localTime > remoteTime) {
-      // 本地数据较新，更新远程数据（假设 PUT /book/{id} 接口更新远程数据）
+      // 本地数据较新，更新远程数据（ PUT /book 接口更新远程数据）
+      const updateBook: UpdateBook = {
+          book_id: localBook.book_id,
+          updated_at: localBook.updatedAt,
+          progress_page: localBook.progressPage
+      }
       try {
-        const response = await fetch(`${api_url}${id}`, {
+        const response = await fetch(`${api_url}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('jwt')}`
           },
-          body: JSON.stringify(localBook)
+          body: JSON.stringify(updateBook)
         });
         if (response.ok) {
           console.log(`Updated remote book ${id} with local changes.`);
@@ -210,7 +201,7 @@ book_data: bookdata.data
 
 const fetchBooks = async (token: string) => {
 try {
-    const response = await fetch('http://localhost:3000/books', {
+    const response = await fetch(api_url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -227,4 +218,28 @@ try {
     console.error('Error fetching books:', error);
  }
 }
+
+
+const fetchBookdata = async (token: string, book_id: string) => {
+
+try {
+    const response = await fetch(`${api_url}/${book_id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // 通过 Authorization 头传递 token，这里假设 token 使用 Bearer 方式
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    // 获取返回的 JSON 对象
+    const data = await response.json();
+    console.log("receive Book data", data[0]);
+   return data[0];
+} catch (error) {
+    console.error('Error fetching books:', error);
+ }
+}
+
+
 export default SyncButton;

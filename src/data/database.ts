@@ -12,10 +12,6 @@ export interface BookStorage {
 }
 
 
-/* export interface FileStorage {
-  id: string
-  file: File
-} */
 
 export interface DataStorage {
   book_id: string

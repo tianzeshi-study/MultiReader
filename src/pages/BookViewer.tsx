@@ -64,7 +64,6 @@ const [showFullText, setShowFullText] = useState(false);
 
   // 使用 useMemo 缓存 bookData，避免每次渲染时重新生成
   const bookData = useMemo(() => {
-    console.log('getting book data', fileData);
     return fileData?.data || [];
   }, [fileData]);
 
