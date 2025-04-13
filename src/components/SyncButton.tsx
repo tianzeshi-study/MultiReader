@@ -247,7 +247,7 @@ const SyncButton: React.FC = () => {
         isOpen={showToast}
         onDidDismiss={() => setShowToast(false)}
         message={toastMessage}
-        duration={2000}
+        duration={20000}
         color={toastColor}
       />
     </>
