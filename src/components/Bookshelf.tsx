@@ -215,6 +215,7 @@ const Bookshelf: React.FC = () => {
         Drag and drop books here, or click to select files.
         <input type="file" multiple onChange={onInputChange} style={{ marginTop: '10px' }} />
       </div>
+      {/*
       <div>
         <input
           type="text"
@@ -229,6 +230,7 @@ const Bookshelf: React.FC = () => {
           Fetch Book
         </button>
       </div>
+*/}
 
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}

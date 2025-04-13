@@ -1,31 +1,32 @@
-import React, { useState, useEffect , useCallback} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import HtmlViewer from "./HtmlViewer";
 import usePageJumper from '../hooks/usePageJumper'; // 导入自定义 Hook
 
-
-
+// 统一使用包含 currentPage 的接口定义
 interface BookInfo {
   bookName: string;
   bookPages: number;
+  currentPage: number;
   bookData: string[];
 }
 
 // Add props interface
 interface WorkspaceReaderProps {
-    FileToHtmlComponent: React.FC<{
-        onHtmlExtracted: (html: string) => void;
-        onFileUploaded?: (file: File) => void;
-        bookData?: string[];
-    }>;
-bookData?: string[];
+  FileToHtmlComponent: React.FC<{
+    onHtmlExtracted: (html: string) => void;
+    onFileUploaded?: (file: File) => void;
+    bookData?: string[];
+  }>;
+  bookData?: string[];
 }
 
-const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent, bookData}) => {
+const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent, bookData }) => {
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [htmlArray, setHtmlArray] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
+  // 初始化 booksInfo 数组时包含 currentPage 初始值
   const [booksInfo, setBooksInfo] = useState<BookInfo[]>([]);
-  const [currentBookIndex, setCurrentBookIndex] = useState<number>(0);
+  const [currentBookIndex, setCurrentBookIndex] = useState<number>(-1);
 
   useEffect(() => {
     return () => {
@@ -36,70 +37,73 @@ const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent, 
     };
   }, []);
 
+  const handleHtmlExtracted = useCallback((html: string) => {
+    setHtmlArray(prevArray => [...prevArray, html]);
+  }, []);
 
-    const handleHtmlExtracted = useCallback((html:string) => {
-        setHtmlArray(prevArray => [...prevArray, html]);
-    }, []);
+  const handleFileChange = (file: File) => {
+    console.log("file changed", file.name);
+    setBooksInfo(prevBooks => {
+      const existingBookIndex = prevBooks.findIndex(book => book.bookName === file.name);
+      if (existingBookIndex > -1) {
+        // 如果书籍已存在，则切换到该书，同时后续可能通过 useEffect 恢复当前页数与数据
+        console.log("update existing book", file.name);
+        setCurrentBookIndex(existingBookIndex);
+        return prevBooks;
+      } else {
+        // 如果书籍不存在，则添加新书籍，并将当前页设置为 0
+        console.log("add new book", file.name);
+        const newBook: BookInfo = { 
+          bookName: file.name, 
+          bookPages: 0, 
+          currentPage: 0, 
+          bookData: [] 
+        };
+        setCurrentBookIndex(prevBooks.length); // 新书的索引为当前数组末尾
+        return [...prevBooks, newBook];
+      }
+    });
+    // 上传新文件时，清空 htmlArray，并将当前页重置为 0
+    setHtmlArray([]);
+    setCurrentPage(0);
+  };
 
-const handleFileChange = (file:File) => {
-        console.log("file changed", file.name);
-        // 更新书籍页数信息
-        setBooksInfo(prevBooks => {
-          const existingBookIndex = prevBooks.findIndex(book => book.bookName === file.name);
-          if (existingBookIndex > -1) {
-            // 如果书籍已存在，则更新页数 (这里假设每次上传都会重置该书的页数)
-            const updatedBooks = [...prevBooks];
-            // Store the current htmlArray into bookData before resetting.
-            console.log("update  book data", file.name);
-            setCurrentBookIndex(existingBookIndex);
-            // updatedBooks[existingBookIndex] = { ...updatedBooks[existingBookIndex], bookName: file.name, bookPages: 0, bookData: htmlArray }; // 初始为0，后续根据 htmlArray 更新
-            return updatedBooks;
-          } else {
-            // 如果书籍不存在，则添加新书籍
-            // Initialize bookData with an empty array.
-            console.log("add new book", file.name);
-            setCurrentBookIndex(booksInfo.length);
-            // return [...prevBooks, { bookName: file.name, bookPages: 0, bookData: htmlArray }];
-            return [...prevBooks, { bookName: file.name, bookPages: 0, bookData: [] }];
-          }
-        });
-        console.log("file change booksInfo count ", booksInfo.length, booksInfo);
-
-        // Clear htmlArray and reset currentPage
-        setHtmlArray([]);
-        setCurrentPage(0);
-        // setCurrentBookIndex(booksInfo.length);
-    }
-
-  const bookChangeEffect =  useEffect(() => {
-    if (htmlArray.length > 0) {
-        console.log("book changed");
+  // 当 htmlArray 变化时，同步更新当前书籍的书页数据和总页数
+  useEffect(() => {
+    if (htmlArray.length > 0 && currentBookIndex !== -1) {
+      console.log("htmlArray changed, update current book info");
       setHtmlContent(htmlArray[currentPage]);
-
-      // 更新当前书籍的总页数
-      if (booksInfo.length > 0)  {
       setBooksInfo(prevBooks => {
         return prevBooks.map((book, index) => {
-          // if (index === currentBookIndex) { // 修改：根据索引比较
-          if (index === booksInfo.length -1&& currentBookIndex === booksInfo.length -1) {
-          return { ...book, bookPages: htmlArray.length, bookData: htmlArray };
-          } else {
-          console.log("update book info", index);
-          return { ...book};
+          if (index === currentBookIndex) {
+            return { 
+              ...book, 
+              bookPages: htmlArray.length, 
+              bookData: htmlArray 
+            };
           }
           return book;
         });
       });
     }
-    }
-  }, [currentBookIndex, htmlArray, currentPage]);
+  }, [htmlArray, currentPage, currentBookIndex]);
 
-
-  const pageChangeEffect = useEffect(() => {
+  // 当页码变化时，更新显示内容，同时同步保存到 booksInfo
+  useEffect(() => {
     if (htmlArray.length > 0) {
       setHtmlContent(htmlArray[currentPage]);
     }
-  }, [htmlArray, currentPage]);
+    if (currentBookIndex !== -1) {
+      setBooksInfo(prevBooks => {
+        return prevBooks.map((book, index) => {
+          if (index === currentBookIndex) {
+            return { ...book, currentPage };
+          }
+          return book;
+        });
+      });
+    }
+  }, [currentPage, currentBookIndex, htmlArray]);
 
   const handlePageChange = (direction: 'prev' | 'next') => {
     if (direction === 'prev' && currentPage > 0) {
@@ -109,11 +113,10 @@ const handleFileChange = (file:File) => {
     }
   };
 
-    const { jumpPage, handleJumpInputChange, handleJump } = usePageJumper({
-        totalPages: htmlArray.length,
-        onPageChange: setCurrentPage,
-    });
-
+  const { jumpPage, handleJumpInputChange, handleJump } = usePageJumper({
+    totalPages: htmlArray.length,
+    onPageChange: setCurrentPage,
+  });
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
@@ -121,39 +124,62 @@ const handleFileChange = (file:File) => {
     }
   };
 
-  // 修改：处理书籍切换，接收索引
+  // 处理书籍切换操作，同时存储当前书的状态，再恢复目标书籍的阅读进度和数据
   const handleBookChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-
-
     const selectedBookIndex = parseInt(event.target.value, 10);
-console.log("selectedBookIndex", selectedBookIndex);
-console.log("selected book pages ", booksInfo[selectedBookIndex].bookData.length);
+    if (isNaN(selectedBookIndex)) return;
+
+    console.log("切换书籍, 当前索引:", currentBookIndex, "目标索引:", selectedBookIndex);
+
+    // 在切换书籍前保存当前书籍的最新状态
+    if (currentBookIndex !== -1) {
+      setBooksInfo(prevBooks => {
+        const updatedBooks = [...prevBooks];
+        updatedBooks[currentBookIndex] = {
+          ...updatedBooks[currentBookIndex],
+          // 更新当前书的页数和数据
+          currentPage: currentPage,
+          bookPages: htmlArray.length,
+          bookData: htmlArray,
+        };
+        return updatedBooks;
+      });
+    }
+
+    // 切换到目标书籍
     setCurrentBookIndex(selectedBookIndex);
-    // setHtmlArray(booksInfo[currentBookIndex].bookData);
 
-      // 切换书籍时，重置当前页码为 0
-      setCurrentPage(0);
-      // TODO: 根据书籍名称加载对应的 htmlArray
-
+    // 从目标书籍恢复历史数据和阅读页数
+    setBooksInfo(prevBooks => {
+      const targetBook = prevBooks[selectedBookIndex];
+      if (targetBook) {
+        // 若存在书籍数据，则切换回之前的阅读页数和数据，否则初始化为空
+        setHtmlArray(targetBook.bookData);
+        setCurrentPage(targetBook.currentPage);
+      } else {
+        setHtmlArray([]);
+        setCurrentPage(0);
+      }
+      return prevBooks;
+    });
   };
 
-const selectBookEffect = useEffect(() => {
-    if (booksInfo.length > 0 && currentBookIndex < booksInfo.length) {
-        console.log("booksInfo", booksInfo, booksInfo.length);
-        console.log("currentBookIndex", currentBookIndex);
-        // if (booksInfo.length > 1 ) {
-        console.log("change to selected data");
-
-
-      const selectedBookData = booksInfo[currentBookIndex].bookData;
-      // setHtmlArray(selectedBookData);
-      setHtmlArray([]);
-      for (const data of selectedBookData) {
-setHtmlArray(prevArray => [...prevArray, data]);
-}
-
+  // 当 currentBookIndex 发生改变时，可以通过 useEffect 来确保显示最新数据（例如当外部 booksInfo 更新后）
+  useEffect(() => {
+    if (currentBookIndex !== -1 && booksInfo[currentBookIndex]) {
+      console.log("切换到书籍：", booksInfo[currentBookIndex].bookName);
+      // 确保 htmlArray 与当前书籍数据保持一致
+      const targetBookData = booksInfo[currentBookIndex].bookData;
+      if (targetBookData && targetBookData.length > 0) {
+        setHtmlArray(targetBookData);
+        setCurrentPage(booksInfo[currentBookIndex].currentPage);
+      } else {
+        // 若数据为空则保持当前状态
+        setHtmlArray([]);
+        setCurrentPage(0);
+      }
     }
-  }, [currentBookIndex]);
+  }, [currentBookIndex, booksInfo]);
 
   return (
     <div>
@@ -164,14 +190,14 @@ setHtmlArray(prevArray => [...prevArray, data]);
         bookData={bookData}
       />
 
-      {/* 修改：书籍选择下拉框 */}
+      {/* 书籍选择下拉框 */}
       <div>
         <label htmlFor="book-select">选择书籍：</label>
         <select id="book-select" value={currentBookIndex} onChange={handleBookChange}>
-          <option value="">请选择书籍</option>
+          <option value={-1}>请选择书籍</option>
           {booksInfo.map((book, index) => (
-            <option key={index} value={index}> {/* 修改：value 为索引 */}
-              {book.bookName} ({book.bookPages} 页)
+            <option key={index} value={index}>
+              {book.bookName} ({book.bookPages} 页, 当前第 {book.currentPage + 1} 页)
             </option>
           ))}
         </select>
@@ -188,7 +214,7 @@ setHtmlArray(prevArray => [...prevArray, data]);
               type="text"
               value={jumpPage}
               onChange={handleJumpInputChange}
-              onKeyPress={handleKeyPress} // 添加 onKeyPress 事件
+              onKeyPress={handleKeyPress}
               placeholder={`当前 ${currentPage + 1} / ${htmlArray.length}`}
             />
 
@@ -199,6 +225,5 @@ setHtmlArray(prevArray => [...prevArray, data]);
     </div>
   );
 };
-
 
 export default WorkspaceReader;
