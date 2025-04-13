@@ -91,6 +91,7 @@ const handleShowFullText = () => {
       </IonHeader>
 
       <IonContent fullscreen>
+<IonToolbar>
 
         <IonButton expand="full" onClick={handleUnmountChildren}>
             {!showChildren ?(<div>显示</div>): (<div>隐藏</div>)}
@@ -98,7 +99,7 @@ const handleShowFullText = () => {
         <IonButton expand="full" onClick={handleShowFullText}>
             {!showFullText?(<div>展开</div>):(<div>折叠</div>)}
         </IonButton>
-
+</IonToolbar>
         {fileData && showChildren ? ( 
           <>
             <IonItem>

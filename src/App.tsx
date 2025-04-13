@@ -2,10 +2,11 @@ import './i18n'; // 确保 i18n 初始化
 import { useTranslation } from 'react-i18next';
 
 import React from "react";
-import AuthPage  from "./components/AuthPage";
+import DashboardTab  from "./pages/DashboardTab";
 import WorkspaceTab from "./pages/WorkspaceTab";
 import BookViewer from "./pages/BookViewer";
-import Bookshelf from "./components/Bookshelf";
+// import Bookshelf from "./components/Bookshelf";
+import BookshelfTab from "./pages/BookshelfTab";
 
 import { Redirect, Route } from 'react-router-dom';
 import {
@@ -57,7 +58,7 @@ const App: React.FC = () => {
           </Route>
           
           <Route exact path="/bookshelf">
-            <Bookshelf/>
+            <BookshelfTab/>
           </Route>
 
 
@@ -71,7 +72,7 @@ const App: React.FC = () => {
           </Route>
           
           <Route exact path="/auth">
-            <AuthPage/>
+            <DashboardTab/>
           </Route>
           
         </IonRouterOutlet>

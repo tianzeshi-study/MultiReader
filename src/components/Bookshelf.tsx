@@ -3,6 +3,8 @@ import { useHistory } from 'react-router-dom';  // 使用 useHistory
 import { handleFiles, fetchBook } from '../data/file';
 import { db, BookStorage } from '../data/database';
 
+
+
 const Bookshelf: React.FC = () => {
   const [books, setBooks] = useState<BookStorage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,7 +89,11 @@ const Bookshelf: React.FC = () => {
     history.push(`/books/${id}`);  // 使用 history.push 进行路由跳转
   };
 
+
+  
   return (
+  
+  
     <div>
       <div
         onDrop={onDrop}
@@ -135,12 +141,15 @@ const Bookshelf: React.FC = () => {
           {books.map((book) => (
             <tr key={book.book_id}>
               <td>
+
                 <span
                   style={{ color: 'blue', cursor: 'pointer' }}
                   onClick={() => handleBookClick(book.book_id)}  // 添加点击事件处理
                 >
                   {book.name}
                 </span>
+
+        
               </td>
               <td>{book.totalPage}</td>
               <td>{book.progressPage ? book.progressPage+1: 0}</td>
@@ -152,6 +161,9 @@ const Bookshelf: React.FC = () => {
         </tbody>
       </table>
     </div>
+    
+
+    
   );
 };
 

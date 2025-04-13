@@ -1,3 +1,6 @@
+use tauri::Manager;
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -8,7 +11,15 @@ pub fn run() {
             .level(log::LevelFilter::Info)
             .build(),
         )?;
+        /*
+        let window = app.get_webview_window("main").expect("无法获取主窗口");
+      // 打开 webview 的开发者工具
+      window.open_devtools();
+      */
       }
+      let window = app.get_webview_window("main").expect("无法获取主窗口");
+      // 打开 webview 的开发者工具
+      window.open_devtools();
       Ok(())
     })
     .run(tauri::generate_context!())

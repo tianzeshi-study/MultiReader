@@ -1,3 +1,4 @@
+import {putUpdateBook} from './SyncButton';
 import { db, DataStorage, BookStorage } from '../data/database';
 import { useParams } from 'react-router';
 import React, { useState, useEffect , useCallback} from 'react';
@@ -172,8 +173,10 @@ const handleFileChange = (file:File) => {
   const pageChangeEffect = useEffect(() => {
     if (storedBook) {
     const updateBookProgress = async () => {
-        let update = await db.books.update(params.id, {progressPage: currentPage, updatedAt: Date.now()});
+        const nowtime =Date.now();
+        let update = await db.books.update(params.id, {progressPage: currentPage, updatedAt: nowtime});
         console.log("update", update);
+        await putUpdateBook(params.id, nowtime, currentPage);
     };
     updateBookProgress();
       } 

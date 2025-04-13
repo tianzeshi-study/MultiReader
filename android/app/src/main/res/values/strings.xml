@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MultiReader</string>
+    <string name="title_activity_main">MultiReader</string>
+    <string name="package_name">multireader.aiursoft.tech</string>
+    <string name="custom_url_scheme">multireader.aiursoft.tech</string>
+</resources>
