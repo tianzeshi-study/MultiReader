@@ -1,44 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';  // 使用 useHistory
+import { useHistory } from 'react-router-dom';
 import { handleFiles, fetchBook } from '../data/file';
 import { db, BookStorage } from '../data/database';
+import { liveQuery } from 'dexie';
 
-// 定义 BookItem 子组件，用于控制单本书的操作（删除、共享等）
 interface BookItemProps {
   book: BookStorage;
   onDelete: (bookId: string) => void;
   onShare: (book: BookStorage) => void;
   onClick: (bookId: string) => void;
 }
-/*
-const BookItem: React.FC<BookItemProps> = ({ book, onDelete, onShare, onClick }) => {
-  return (
-    <tr>
-      <td>
-        <span
-          style={{ color: 'blue', cursor: 'pointer' }}
-          onClick={() => onClick(book.book_id)}
-        >
-          {book.name}
-        </span>
-      </td>
-      <td>{book.totalPage}</td>
-      <td>{book.progressPage ? book.progressPage + 1 : 0}</td>
-      <td>{(book.size / (1024 * 1024)).toFixed(2)}</td>
-      <td>{new Date(book.importedAt).toLocaleString()}</td>
-      <td>{book.updatedAt ? new Date(book.updatedAt).toLocaleString() : 'N/A'}</td>
-      <td>
-        <button onClick={() => onDelete(book.book_id)} style={{ marginRight: '5px' }}>
-          删除
-        </button>
-        <button onClick={() => onShare(book)}>
-          共享
-        </button>
-      </td>
-    </tr>
-  );
-};
-*/
+
 const BookItem: React.FC<BookItemProps> = ({ book, onDelete, onShare, onClick }) => {
   const [showActions, setShowActions] = useState<boolean>(false);
 
@@ -79,44 +51,42 @@ const BookItem: React.FC<BookItemProps> = ({ book, onDelete, onShare, onClick })
                 setShowActions(false);
               }}
             >
-              共享
+              详情
             </button>
-            <button
-              onClick={toggleActions}
-              style={{ marginLeft: '5px' }}
-            >
+            <button onClick={toggleActions} style={{ marginLeft: '5px' }}>
               关闭
             </button>
           </>
         ) : (
-          <button onClick={toggleActions}>
-            更多操作
-          </button>
+          <button onClick={toggleActions}>更多操作</button>
         )}
       </td>
     </tr>
   );
 };
+
 const Bookshelf: React.FC = () => {
   const [books, setBooks] = useState<BookStorage[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const history = useHistory();  // 使用 history hook
+  const history = useHistory();
 
+  // 使用 liveQuery 监听 db.books 的变化
   useEffect(() => {
-    loadBooks();
-  }, []);
+    const subscription = liveQuery(() => db.books.toArray()).subscribe({
+      next: (booksFromDb: BookStorage[]) => {
+        console.log("booksFromDb", booksFromDb);
+        setBooks(booksFromDb);
+      },
+      error: (error) => {
+        console.error("Error fetching books:", error);
+        setError('加载图书数据失败');
+      },
+    });
 
-  const loadBooks = async () => {
-    try {
-      const booksFromDb = await db.books.toArray();
-      console.log("booksFromDb", booksFromDb);
-      setBooks(booksFromDb);
-    } catch (error) {
-      setError('Failed to load books.');
-      console.error(error);
-    }
-  };
+    // 组件卸载时取消订阅，防止内存泄漏
+    return () => subscription.unsubscribe();
+  }, []);
 
   const onDrop = async (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -126,9 +96,9 @@ const Bookshelf: React.FC = () => {
     const files = event.dataTransfer.files;
     try {
       const newBooks = await handleFiles(files);
-      setBooks((prevBooks) => [...prevBooks, ...newBooks]);
+      // 这里无需手动更新 state，liveQuery 会自动触发更新
     } catch (error) {
-      setError('Failed to import books.');
+      setError('导入图书失败');
       console.error(error);
     } finally {
       setLoading(false);
@@ -142,9 +112,9 @@ const Bookshelf: React.FC = () => {
       setLoading(true);
       try {
         const newBooks = await handleFiles(files);
-        setBooks((prevBooks) => [...prevBooks, ...newBooks]);
+        // 同上，liveQuery 自动更新 state
       } catch (error) {
-        setError('Failed to import books.');
+        setError('导入图书失败');
         console.error(error);
       } finally {
         setLoading(false);
@@ -157,16 +127,9 @@ const Bookshelf: React.FC = () => {
     setError(null);
     try {
       const newBook = await fetchBook(url);
-      if (newBook) {
-        setBooks((prevBooks) => {
-          if (prevBooks.find(b => b.book_id === newBook.book_id)) {
-            return prevBooks;
-          }
-          return [...prevBooks, newBook];
-        });
-      }
+      // 新书添加成功后，liveQuery 会监控到 db.books 表的变化从而自动更新 books 状态
     } catch (error) {
-      setError('Failed to fetch book.');
+      setError('加载图书失败');
       console.error(error);
     } finally {
       setLoading(false);
@@ -178,27 +141,24 @@ const Bookshelf: React.FC = () => {
   };
 
   const handleBookClick = (id: string) => {
-    history.push(`/books/${id}`);  // 使用 history.push 进行路由跳转
+    history.push(`/books/${id}`);
   };
 
-  // 实现删除图书的操作，同时更新数据库和组件状态
+  // 实现删除图书的操作，同时更新数据库，liveQuery 同步回调会自动更新 UI
   const handleDeleteBook = async (bookId: string) => {
     try {
       await db.books.delete(bookId);
       await db.filesData.delete(bookId);
-      setBooks(prevBooks => prevBooks.filter(book => book.book_id !== bookId));
+      // 无需手动调用 setBooks，因为 liveQuery 会更新状态
     } catch (error) {
       console.error('删除图书时发生错误：', error);
       setError('删除图书失败');
     }
   };
 
-  // 示例：实现图书共享功能，此处仅输出日志，可根据需要扩展功能
   const handleShareBook = (book: BookStorage) => {
-    // 可使用 Web Share API 或者其他方式进行共享
-    console.log('共享图书：', book);
-    // 示例提示，可自行替换为弹窗或其他用户反馈方式
-    alert(`共享图书：${book.name}`);
+    console.log('详情图书：', book);
+    alert(`图书标识码：${book.name}:\n${book.book_id}`);
   };
 
   return (
@@ -212,25 +172,9 @@ const Bookshelf: React.FC = () => {
           marginBottom: '20px',
         }}
       >
-        Drag and drop books here, or click to select files.
+        将图书文件拖放到此区域，或点击选择文件。
         <input type="file" multiple onChange={onInputChange} style={{ marginTop: '10px' }} />
       </div>
-      {/*
-      <div>
-        <input
-          type="text"
-          placeholder="Enter book URL"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              handleFetchBook((e.target as HTMLInputElement).value);
-            }
-          }}
-        />
-        <button onClick={() => handleFetchBook((document.querySelector('input[type="text"]') as HTMLInputElement).value)}>
-          Fetch Book
-        </button>
-      </div>
-*/}
 
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}

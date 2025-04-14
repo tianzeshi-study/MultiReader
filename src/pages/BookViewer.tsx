@@ -85,7 +85,7 @@ const handleShowFullText = () => {
       <IonHeader translucent>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonBackButton text="Inbox" defaultHref="../bookshelf" />
+            <IonBackButton text="返回" defaultHref="../bookshelf" />
           </IonButtons>
         </IonToolbar>
       </IonHeader>
@@ -122,7 +122,7 @@ const handleShowFullText = () => {
             </div>
           </>
         ) : (
-          <div>BOOK DATA NOT FOUND!</div>
+          <div>这里似乎什么也没有!</div>
         )}
       </IonContent>
     </IonPage>
