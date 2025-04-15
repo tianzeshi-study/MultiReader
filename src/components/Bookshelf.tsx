@@ -1,75 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
+import { liveQuery } from 'dexie';
+import {
+  IonModal,
+  IonButton,
+  IonContent,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonLoading,
+} from '@ionic/react';
+
 import { handleFiles, fetchBook } from '../data/file';
 import { db, BookStorage } from '../data/database';
-import { liveQuery } from 'dexie';
+import BookItem from './BookItem';
 
-interface BookItemProps {
-  book: BookStorage;
-  onDelete: (bookId: string) => void;
-  onShare: (book: BookStorage) => void;
-  onClick: (bookId: string) => void;
+const base_url = import.meta.env.VITE_BASE_URL;
+interface SharingBook {
+  book_id: string;
+  valid_time: number;
 }
-
-const BookItem: React.FC<BookItemProps> = ({ book, onDelete, onShare, onClick }) => {
-  const [showActions, setShowActions] = useState<boolean>(false);
-
-  const toggleActions = () => {
-    setShowActions(!showActions);
-  };
-
-  return (
-    <tr>
-      <td>
-        <span
-          style={{ color: 'blue', cursor: 'pointer' }}
-          onClick={() => onClick(book.book_id)}
-        >
-          {book.name}
-        </span>
-      </td>
-      <td>{book.totalPage}</td>
-      <td>{book.progressPage ? book.progressPage + 1 : 0}</td>
-      <td>{(book.size / (1024 * 1024)).toFixed(2)}</td>
-      <td>{new Date(book.importedAt).toLocaleString()}</td>
-      <td>{book.updatedAt ? new Date(book.updatedAt).toLocaleString() : 'N/A'}</td>
-      <td>
-        {showActions ? (
-          <>
-            <button
-              onClick={() => {
-                onDelete(book.book_id);
-                setShowActions(false);
-              }}
-              style={{ marginRight: '5px' }}
-            >
-              删除
-            </button>
-            <button
-              onClick={() => {
-                onShare(book);
-                setShowActions(false);
-              }}
-            >
-              详情
-            </button>
-            <button onClick={toggleActions} style={{ marginLeft: '5px' }}>
-              关闭
-            </button>
-          </>
-        ) : (
-          <button onClick={toggleActions}>更多操作</button>
-        )}
-      </td>
-    </tr>
-  );
-};
 
 const Bookshelf: React.FC = () => {
   const [books, setBooks] = useState<BookStorage[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false); // 处理文件和图书加载时的 loading 状态
   const [error, setError] = useState<string | null>(null);
   const history = useHistory();
+
+  // 添加分享操作的 loading 状态，以及 Modal 控制状态
+  const [shareLoading, setShareLoading] = useState<boolean>(false);
+  const [shareModalOpen, setShareModalOpen] = useState<boolean>(false);
+  const [shareToken, setShareToken] = useState<string>('');
+  const [shareBookName, setShareBookName] = useState<string>('');
 
   // 使用 liveQuery 监听 db.books 的变化
   useEffect(() => {
@@ -95,7 +57,7 @@ const Bookshelf: React.FC = () => {
 
     const files = event.dataTransfer.files;
     try {
-      const newBooks = await handleFiles(files);
+      await handleFiles(files);
       // 这里无需手动更新 state，liveQuery 会自动触发更新
     } catch (error) {
       setError('导入图书失败');
@@ -111,7 +73,7 @@ const Bookshelf: React.FC = () => {
     if (files) {
       setLoading(true);
       try {
-        const newBooks = await handleFiles(files);
+        await handleFiles(files);
         // 同上，liveQuery 自动更新 state
       } catch (error) {
         setError('导入图书失败');
@@ -126,7 +88,7 @@ const Bookshelf: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const newBook = await fetchBook(url);
+      await fetchBook(url);
       // 新书添加成功后，liveQuery 会监控到 db.books 表的变化从而自动更新 books 状态
     } catch (error) {
       setError('加载图书失败');
@@ -144,21 +106,51 @@ const Bookshelf: React.FC = () => {
     history.push(`/books/${id}`);
   };
 
-  // 实现删除图书的操作，同时更新数据库，liveQuery 同步回调会自动更新 UI
+  // 删除图书操作
   const handleDeleteBook = async (bookId: string) => {
     try {
       await db.books.delete(bookId);
       await db.filesData.delete(bookId);
-      // 无需手动调用 setBooks，因为 liveQuery 会更新状态
+      // liveQuery 自动更新状态
     } catch (error) {
       console.error('删除图书时发生错误：', error);
       setError('删除图书失败');
     }
   };
 
-  const handleShareBook = (book: BookStorage) => {
-    console.log('详情图书：', book);
-    alert(`图书标识码：${book.name}:\n${book.book_id}`);
+  /**
+   * 分享图书操作：
+   * - 开始时显示 Ionic Loading；
+   * - 请求生成分享 token；
+   * - 请求返回后复制 token 到剪贴板，并展示 IonModal 显示 token 信息；
+   * - IonModal 包含关闭按钮以结束对话框。
+   */
+  const handleShareBook = async (book: BookStorage) => {
+    setShareLoading(true);
+    setError(null);
+    setShareBookName(book.name);
+    
+    try {
+      const sharing_token = await createBookSharing(book.book_id, 60 * 60 * 24 * 7);
+      if (sharing_token) {
+          const token = `${book.book_id}?token=${sharing_token}`;
+        // 将 token 复制到剪贴板
+        try {
+          await navigator.clipboard.writeText(token);
+        } catch (err) {
+          console.error('复制到剪贴板失败：', err);
+        }
+        setShareToken(token);
+        setShareModalOpen(true);
+      } else {
+        setError('生成分享链接失败');
+      }
+    } catch (err) {
+      setError('分享图书失败');
+      console.error(err);
+    } finally {
+      setShareLoading(false);
+    }
   };
 
   return (
@@ -204,8 +196,70 @@ const Bookshelf: React.FC = () => {
           ))}
         </tbody>
       </table>
+
+      {/* IonLoading 用于分享操作过程中的 Loading 状态 */}
+      <IonLoading
+        isOpen={shareLoading}
+        message={'分享图书中...'}
+        onDidDismiss={() => {}}
+      />
+
+      {/* IonModal 用于展示分享结果 */}
+      <IonModal isOpen={shareModalOpen} onDidDismiss={() => setShareModalOpen(false)}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>分享图书</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          <p>图书名称：<strong>{shareBookName}</strong></p>
+          <p>分享链接已复制到剪贴板：</p>
+          <p style={{ wordBreak: 'break-all' }}><strong>{shareToken}</strong></p>
+          <IonButton expand="block" onClick={() => setShareModalOpen(false)}>
+            关闭
+          </IonButton>
+        </IonContent>
+      </IonModal>
     </div>
   );
+};
+
+
+const createBookSharing = async (
+  book_id: string,
+  valid_time: number
+): Promise<string | undefined> => {
+  const sharingBook: SharingBook = {
+    book_id,
+    valid_time,
+  };
+
+  try {
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
+    const response = await fetch(`${base_url}/books/sharing`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(sharingBook),
+    });
+    if (response.ok) {
+      console.log(`sharing remote book ${book_id} with local changes.`);
+      const sharing_token = await response.json();
+      // 假设返回的分享标识码为数组的第一个元素
+      console.log("receive sharing token", sharing_token);
+      return sharing_token;
+    } else {
+      console.error(
+        `Failed to share remote book ${book_id}:`,
+        await response.text()
+      );
+    }
+  } catch (err) {
+    console.error(`Error sharing remote book ${book_id}:`, err);
+  }
 };
 
 export default Bookshelf;
