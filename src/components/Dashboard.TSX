@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SyncButton from './SyncButton';
 import { IonLoading, IonToast } from '@ionic/react';
-
+const base_url = import.meta.env.VITE_BASE_URL;
 
 // 登录后展示的 Dashboard 页面
 const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {

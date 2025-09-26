@@ -34,6 +34,16 @@ const BookItem: React.FC<BookItemProps> = ({ book, onDelete, onShare, onClick })
       <td>
         {showActions ? (
           <>
+            
+            <button
+              onClick={() => {
+                onShare(book);
+                setShowActions(false);
+              }}
+            >
+              分享
+            </button>
+            
             <button
               onClick={() => {
                 onDelete(book.book_id);
@@ -43,14 +53,7 @@ const BookItem: React.FC<BookItemProps> = ({ book, onDelete, onShare, onClick })
             >
               删除
             </button>
-            <button
-              onClick={() => {
-                onShare(book);
-                setShowActions(false);
-              }}
-            >
-              分享
-            </button>
+            
             <button onClick={toggleActions} style={{ marginLeft: '5px' }}>
               关闭
             </button>

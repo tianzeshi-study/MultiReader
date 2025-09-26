@@ -53,7 +53,7 @@ const App: React.FC = () => {
       <IonTabs>
         <IonRouterOutlet>
 
-<Route path="/books/:id">
+<Route path="/bookshelf/:id">
             <BookViewer />
           </Route>
           

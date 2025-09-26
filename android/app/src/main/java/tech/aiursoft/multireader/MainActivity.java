@@ -1,4 +1,4 @@
-package multireader.aiursoft.tech;
+package tech.aiursoft.multireader;
 
 import com.getcapacitor.BridgeActivity;
 

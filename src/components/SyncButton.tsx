@@ -288,7 +288,7 @@ const fetchBookdata = async (token: string, book_id: string) => {
   }
 };
 
-export const putUpdateBook = async (
+export const putUpdateBook1 = async (
   book_id: string,
   updated_at: number,
   progress_page: number
@@ -320,6 +320,80 @@ export const putUpdateBook = async (
     }
   } catch (err) {
     console.error(`Error updating remote book ${book_id}:`, err);
+  }
+};
+
+
+/**
+ * 解析 JWT 并判断是否过期
+ * @param token JWT 字符串
+ * @returns true - 如果 token 已经过期；false - 否则
+ */
+const isJwtExpired = (token: string): boolean => {
+  try {
+    // JWT 格式为：header.payload.signature
+    const payloadBase64 = token.split('.')[1];
+    // 解码 Base64 字符串，注意需要对 URL-safe Base64 做替换
+    const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+    const decodedPayload = JSON.parse(atob(base64));
+
+    if (decodedPayload.exp && typeof decodedPayload.exp === "number") {
+      // 获取当前时间的 UNIX 时间戳（秒）
+      const currentTime = Math.floor(Date.now() / 1000);
+      // 如果当前时间大于或等于过期时间，则认为 token 已经过期
+      return currentTime >= decodedPayload.exp;
+    }
+    // 如果不存在 exp 字段，默认认为 token 有效
+    return false;
+  } catch (e) {
+    console.error("解析 JWT 时出现错误:", e);
+    // 如果解析失败，建议认为 token 无效或已经过期
+    return true;
+  }
+};
+
+export const putUpdateBook = async (
+  book_id: string,
+  updated_at: number,
+  progress_page: number
+) => {
+  const updateBook: UpdateBook = {
+    book_id: book_id,
+    updated_at: updated_at,
+    progress_page: progress_page,
+  };
+
+  try {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+      console.warn("没有获取到 JWT token");
+      return;
+    }
+    
+    // 在调用接口前先判断 JWT 是否过期
+    if (isJwtExpired(token)) {
+      console.warn("JWT token 已经过期");
+      return;
+    }
+
+    const response = await fetch(api_url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(updateBook),
+    });
+    if (response.ok) {
+      console.log(`已成功更新远程书籍 ${book_id} 的本地变更。`);
+    } else {
+      console.error(
+        `更新远程书籍 ${book_id} 失败:`,
+        await response.text()
+      );
+    }
+  } catch (err) {
+    console.error(`更新远程书籍 ${book_id} 时出现错误:`, err);
   }
 };
 

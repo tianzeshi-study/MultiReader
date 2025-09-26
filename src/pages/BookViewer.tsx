@@ -21,15 +21,26 @@ import {
   useIonViewDidLeave,
 } from '@ionic/react';
 import { personCircle } from 'ionicons/icons';
-import { useParams } from 'react-router';
+import { useParams, useLocation } from 'react-router';
 
 // const BookViewer: React.FC = () => {
+    const base_url = import.meta.env.VITE_BASE_URL;
+    interface BookBundle {
+        book_meta:BookStorage;
+        book_data: DataStorage;
+        }
 function BookViewer() {
   const [fileData, setFileData] = useState<DataStorage>();
   const [book, setBook] = useState<BookStorage>();
+
   const [showChildren, setShowChildren] = useState(true);
 const [showFullText, setShowFullText] = useState(false); 
   const params = useParams<{ id: string }>();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  // 从 query 参数中获取 token 的值
+  const sharing_token = queryParams.get('token');
+  
 
   useIonViewWillLeave(() => {
     console.log('BookViewer is about to leave');
@@ -43,6 +54,28 @@ const [showFullText, setShowFullText] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
+        if (sharing_token) {
+            console.log("queryParams token:\n", sharing_token);
+            const bundle = await fetchSharingBook(sharing_token);
+            if (!bundle) {
+                return null;
+            };
+            setFileData(bundle.book_data);
+setBook(bundle.book_meta);
+            console.log("bundle:\n", bundle);
+
+            try {
+            await db?.books.add(bundle.book_meta);
+            await db?.filesData.add(bundle.book_data);
+            } catch (error: any) {
+  if (error.name === 'ConstraintError') {
+    console.log('数据插入时违反了唯一性约束，可能数据已存在：', error);
+    // 根据需求可以选择使用更新逻辑或提示用户
+  } else {
+    console.error('数据操作失败：', error);
+  }
+            }
+                    } else {
       const data = await db?.filesData.get(params.id);
       const b = await db?.books.get(params.id);
 
@@ -53,6 +86,7 @@ const [showFullText, setShowFullText] = useState(false);
       if (b && JSON.stringify(b) !== JSON.stringify(book)) {
         setBook(b);
       }
+                    }
     };
 
     loadData(); // 调用异步函数
@@ -129,5 +163,43 @@ const handleShowFullText = () => {
   );
 // };
 }
+
+const fetchSharingBook = async (sharing_token: string) => {
+  try {
+    const response = await fetch(`${base_url}/books/sharing?token=${sharing_token}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // 'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (response.ok) {
+    const data = await response.json();
+    console.log("receiveBook", data);
+    let book_data: DataStorage = data.book_data;
+    let book_meta: BookStorage = {
+        book_id: data.book_meta.book_id,
+  name: data.book_meta.name,
+  size: data.book_meta.size,
+  importedAt: data.book_meta.imported_at,
+  updatedAt: data.book_meta.updated_at,
+  progressPage: data.book_meta.progress_page,
+  totalPage: data.book_meta.total_page
+    };
+    return {
+        book_meta: book_meta,
+        book_data: book_data
+    };
+    } else if (response.status === 401){
+        console.log("token unauthorize", response);
+        alert("无效链接");
+    } else {
+        console.error("unknown sharing error", response.json());
+        alert("链接解析失败");
+    };
+  } catch (error) {
+    console.error("Error fetching sharing books:", error);
+  }
+};
 
 export default BookViewer;

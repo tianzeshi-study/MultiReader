@@ -2,5 +2,9 @@
   "WORKSPACE": "工作空间",
   "BOOKSHELF": "书架",
   "AUTH": "我的",
-  "BUTTON_CANCEL": "取消"
+  "BUTTON_CANCEL": "取消",
+  "PREVIOUS_PAGE": "上一页",
+  "NEXT_PAGE": "下一页",
+  "SLOGAN_PAIR1": "书山有路你不走",
+  "SLOGAN_PAIR2": "学海无涯你闯进来"
 }

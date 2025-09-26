@@ -103,7 +103,7 @@ const Bookshelf: React.FC = () => {
   };
 
   const handleBookClick = (id: string) => {
-    history.push(`/books/${id}`);
+    history.push(`/bookshelf/${id}`);
   };
 
   // 删除图书操作
@@ -133,7 +133,15 @@ const Bookshelf: React.FC = () => {
     try {
       const sharing_token = await createBookSharing(book.book_id, 60 * 60 * 24 * 7);
       if (sharing_token) {
-          const token = `${book.book_id}?token=${sharing_token}`;
+          // const currentPath = location.pathname + location.search;
+          const currentPath = location.pathname;
+const currentUrl = new URL(window.location.origin + currentPath);
+
+  // currentUrl.searchParams.set('token', externalToken);
+// const newUrlWithToken = currentUrl.toString();
+const urlString = currentUrl.toString();
+
+          const token = `${urlString}/${book.book_id}?token=${sharing_token}`;
         // 将 token 复制到剪贴板
         try {
           await navigator.clipboard.writeText(token);
@@ -143,6 +151,7 @@ const Bookshelf: React.FC = () => {
         setShareToken(token);
         setShareModalOpen(true);
       } else {
+          console.error("get sharing_token fail ");
         setError('生成分享链接失败');
       }
     } catch (err) {
@@ -236,7 +245,11 @@ const createBookSharing = async (
 
   try {
     const token = localStorage.getItem("jwt");
-    if (!token) return;
+    if (!token) {
+        console.error("unauthorize, token not found");
+        alert("你还没有登录");
+        return
+    };
     const response = await fetch(`${base_url}/books/sharing`, {
       method: "POST",
       headers: {
@@ -253,7 +266,7 @@ const createBookSharing = async (
       return sharing_token;
     } else {
       console.error(
-        `Failed to share remote book ${book_id}:`,
+        `error: Failed to share remote book ${book_id}:`,
         await response.text()
       );
     }

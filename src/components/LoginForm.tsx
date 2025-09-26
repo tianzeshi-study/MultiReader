@@ -51,8 +51,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       }
     } catch (err) {
       console.error(err);
+      console.log("base_url:", base_url);
       setLoading(false);
-      setToastMessage('网络错误');
+      // setToastMessage(`网络错误${base_url}${err}`);
+      setToastMessage(`网络错误${err}`);
       setToastColor('danger');
     }
     setShowToast(true);

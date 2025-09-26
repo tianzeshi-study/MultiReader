@@ -90,7 +90,7 @@ const FileToHtml: React.FC<{ onHtmlExtracted: (html: string) => void, onFileUplo
                             // 将每行转换为 HTML
                             const htmlPage = lines.map(line => {
                                 const lineText = line.map((item: TextItem) => item.str).join(" ");
-                                return `<div>${lineText}</div>`;
+                                return `<p>${lineText}</p>`;
                             }).join("");
 
                             resultHtml.push(`<div>${htmlPage}</div><button>${i}</button>`);

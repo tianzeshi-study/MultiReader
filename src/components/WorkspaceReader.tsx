@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef} from 'react';
+import { useTranslation } from 'react-i18next';
 import HtmlViewer from "./HtmlViewer";
-import usePageJumper from '../hooks/usePageJumper'; // 导入自定义 Hook
+import usePageJumper from '../hooks/usePageJumper';
+import SearchBox from './SearchBox'; 
 
 // 统一使用包含 currentPage 的接口定义
 interface BookInfo {
@@ -21,12 +23,29 @@ interface WorkspaceReaderProps {
 }
 
 const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent, bookData }) => {
+    
+    const { t, i18n } = useTranslation();
+
+  const changeLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('language', lang); // 记住用户选择
+  };
+
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [htmlArray, setHtmlArray] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   // 初始化 booksInfo 数组时包含 currentPage 初始值
   const [booksInfo, setBooksInfo] = useState<BookInfo[]>([]);
   const [currentBookIndex, setCurrentBookIndex] = useState<number>(-1);
+  
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // 2. 在 currentPage 改变时，让 <h2> 获取焦点
+  useEffect(() => {
+    if (headingRef.current) {
+      headingRef.current.focus();
+    }
+  }, [currentPage]);
 
   useEffect(() => {
     return () => {
@@ -36,6 +55,7 @@ const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent, 
       setBooksInfo([]);
     };
   }, []);
+  
 
   const handleHtmlExtracted = useCallback((html: string) => {
     setHtmlArray(prevArray => [...prevArray, html]);
@@ -179,16 +199,25 @@ const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent, 
         setCurrentPage(0);
       }
     }
-  }, [currentBookIndex, booksInfo]);
+  // }, [currentBookIndex, booksInfo]);
+  }, [currentBookIndex]);
+  
+  const handlePageSelectFromSearch = (pageIndex: number) => {
+    setCurrentPage(pageIndex);
+  };
 
   return (
     <div>
-      <h1>书山有路你不走</h1>
+      <h1>{t('SLOGAN_PAIR1')}</h1>
       <FileToHtmlComponent
         onHtmlExtracted={handleHtmlExtracted}
         onFileUploaded={handleFileChange}
         bookData={bookData}
       />
+      
+      {/* 添加搜索框组件 */}
+      <SearchBox htmlArray={htmlArray} onPageSelect={handlePageSelectFromSearch} />
+      
 
       {/* 书籍选择下拉框 */}
       <div>
@@ -205,10 +234,18 @@ const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent, 
 
       {htmlContent && (
         <>
-          <h2>学海无涯你闯进来</h2>
+        
+          <h2
+            ref={headingRef}
+            tabIndex={-1}           // 必需，让非交互元素也能被 focus
+            style={{ outline: 'none' }} // 可选：去掉默认聚焦时的虚线边框
+          >
+            {t('SLOGAN_PAIR2')}
+          </h2>
+
           <HtmlViewer htmlContent={htmlContent} />
           <div>
-            <button onClick={() => handlePageChange('prev')} disabled={currentPage === 0}>上一页</button>
+            <button onClick={() => handlePageChange('prev')} disabled={currentPage === 0}>{t('PREVIOUS_PAGE')}</button>
 
             <input
               type="text"
@@ -218,7 +255,7 @@ const WorkspaceReader: React.FC<WorkspaceReaderProps> = ({ FileToHtmlComponent, 
               placeholder={`当前 ${currentPage + 1} / ${htmlArray.length}`}
             />
 
-            <button onClick={() => handlePageChange('next')} disabled={currentPage === htmlArray.length - 1}>下一页</button>
+            <button onClick={() => handlePageChange('next')} disabled={currentPage === htmlArray.length - 1}>{t('NEXT_PAGE')}</button>
           </div>
         </>
       )}
